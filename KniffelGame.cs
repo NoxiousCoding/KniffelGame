@@ -1,6 +1,8 @@
-﻿using System.Linq;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
 using System.Threading;
+using System.Threading.Channels;
 
 namespace KniffelConsole
 {
@@ -55,15 +57,63 @@ namespace KniffelConsole
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("============== REGELN ==============");
             Console.ResetColor();
-            Console.WriteLine("• 5 Würfel");
-            Console.WriteLine("• Bis zu 3 Würfe pro Runde");
-            Console.WriteLine("• Nach jedem Wurf darf man Würfel behalten");
-            Console.WriteLine("• 13 Runden – jede Kategorie genau einmal");
-            Console.WriteLine("• Kategorien: Einsen, Zweien, ... Kniffel (50 Punkte)");
-            Console.WriteLine("• Bonus: 35 Punkte ab 63 Punkten in der oberen Sektion");
-            Console.WriteLine("• Computer kann optional als Spieler teilnehmen");
-            Console.WriteLine("\nENTER zum Zurückkehren...");
-            Console.ReadLine();
+            Console.WriteLine("1. Spielregeln anzeigen");
+            Console.WriteLine("2. Kategorien-Erklärungen");
+            Console.WriteLine("3. Zurück zum Hauptmenü");
+            Console.WriteLine("------------------------------------");
+            Console.Write("Auswahl: ");
+
+            string input = Console.ReadLine().Trim();
+            switch (input)
+            {
+                case "1":
+                    Console.Clear();
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine("============== SPIELREGELN ==============");
+                    Console.ResetColor();
+                    Console.WriteLine("• 5 Würfel");
+                    Console.WriteLine("• Bis zu 3 Würfe pro Runde");
+                    Console.WriteLine("• Nach jedem Wurf darf man Würfel behalten");
+                    Console.WriteLine("• 13 Runden – jede Kategorie genau einmal");
+                    Console.WriteLine("• Kategorien: Einsen, Zweien, ... Kniffel (50 Punkte)");
+                    Console.WriteLine("• Bonus: 35 Punkte ab 63 Punkten in der oberen Sektion");
+                    Console.WriteLine("• Computer kann optional als Spieler teilnehmen");
+                    Console.WriteLine("\nENTER zum Zurückkehren...");
+                    Console.ReadLine();
+                    break;
+
+                case "2":
+                    Console.Clear();
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine("=========== KATEGORIEN ===========");
+                    Console.ResetColor();
+                    Console.WriteLine("• Einsen bis Sechsen: Summe aller gewürfelten Augen dieser Zahl");
+                    Console.WriteLine("• Dreierpasch: Mindestens drei gleiche Würfel, Summe aller Würfel");
+                    Console.WriteLine("• Viererpasch: Mindestens vier gleiche Würfel, Summe aller Würfel");
+                    Console.WriteLine("• Full House: 3 gleiche + 2 gleiche → 25 Punkte");
+                    Console.WriteLine("• Kleine Straße: Vier aufeinanderfolgende Würfel → 30 Punkte");
+                    Console.WriteLine("• Große Straße: Fünf aufeinanderfolgende Würfel → 40 Punkte");
+                    Console.WriteLine("• Kniffel: Fünf gleiche Würfel → 50 Punkte");
+                    Console.WriteLine("• Chance: Summe aller Würfel");
+                    Console.ForegroundColor = ConsoleColor.Blue;
+                    Console.WriteLine("=========== BONUS-KATEGORIEN ===========");
+                    Console.ResetColor();
+                    Console.WriteLine("• Zwei Paare: Zwei verschiedene Paare → 15 Punkte");
+                    Console.WriteLine("• Mini-Full-House: Zwei Paare → 10 Punkte");
+                    Console.WriteLine("• Chance+: Summe aller Würfel + 5 Bonuspunkte, wenn Summe ≥ 20");
+                    Console.WriteLine("\nENTER zum Zurückkehren...");
+                    Console.ReadLine();
+                    break;
+
+                case "3":
+                    return;
+
+                default:
+                    Console.WriteLine("Ungültige Eingabe! ENTER drücken...");
+                    Console.ReadLine();
+                    break;
+            }
+
         }
     }
 
@@ -270,7 +320,7 @@ namespace KniffelConsole
             string[] categories = {
                 "Einsen","Zweien","Dreien","Vieren","Fünfen","Sechsen",
                 "Dreierpasch","Viererpasch","Full House",
-                "Kleine Straße","Große Straße","Kniffel","Chance"
+                "Kleine Straße","Große Straße","Kniffel","Chance","Zwei Paare","Mini Full House","Chance+"
             };
 
             while (true)
@@ -301,8 +351,9 @@ namespace KniffelConsole
         {
             string[] categories = {
                 "Einsen","Zweien","Dreien","Vieren","Fünfen","Sechsen",
-                "Dreierpasch","Viererpasch","Full House",
-                "Kleine Straße","Große Straße","Kniffel","Chance"
+                "Paar","Dreierpasch","Viererpasch","Full House",
+                "Kleine Straße","Große Straße","Kniffel","Chance",
+                "Zwei Paare","Mini Full House","Chance+"
             };
 
             int bestScore = -1;
@@ -315,6 +366,8 @@ namespace KniffelConsole
                     int pts = EvaluateCategory(cat, dice);
                     if (cat == "Kniffel" && pts == 50) pts += 20;
                     if ((cat == "Full House" || cat == "Große Straße") && pts > 0) pts += 10;
+                    if (cat == "Chance+" && pts >= 25) pts += 5;
+
 
                     if (pts > bestScore)
                     {
@@ -344,6 +397,7 @@ namespace KniffelConsole
                 "Vieren" => count[4] * 4,
                 "Fünfen" => count[5] * 5,
                 "Sechsen" => count[6] * 6,
+                "Paar" => count.Any(c => c >= 2) ? sum : 0,
                 "Dreierpasch" => count.Any(c => c >= 3) ? sum : 0,
                 "Viererpasch" => count.Any(c => c >= 4) ? sum : 0,
                 "Full House" => (count.Contains(3) && count.Contains(2)) ? 25 : 0,
@@ -351,6 +405,11 @@ namespace KniffelConsole
                 "Große Straße" => (s.SequenceEqual(new[] { 2, 3, 4, 5, 6 })) ? 40 : 0,
                 "Kniffel" => count.Any(c => c == 5) ? 50 : 0,
                 "Chance" => sum,
+
+                "Zwei Paare" => count.Count(c => c >= 2) >= 2 ? 15 : 0,
+                "Mini Full House" => (count.Count(c => c == 2) == 2) ? 10 : 0,
+                "Chance+" => sum >= 20 ? sum + 5 : sum,
+
                 _ => 0
             };
         }
@@ -365,6 +424,7 @@ namespace KniffelConsole
                 case "Vieren": score.Fours = points; break;
                 case "Fünfen": score.Fives = points; break;
                 case "Sechsen": score.Sixes = points; break;
+                case "Paar": score.Pair = points; break;
                 case "Dreierpasch": score.ThreeOfAKind = points; break;
                 case "Viererpasch": score.FourOfAKind = points; break;
                 case "Full House": score.FullHouse = points; break;
@@ -372,6 +432,10 @@ namespace KniffelConsole
                 case "Große Straße": score.LargeStraight = points; break;
                 case "Kniffel": score.Yahtzee = points; break;
                 case "Chance": score.Chance = points; break;
+                case "Zwei Paare": score.TwoPairs = points; break;
+                case "Mini Full House": score.MiniFullHouse = points; break;
+                case "Chance+": score.ChancePlus = points; break;
+
             }
         }
 
@@ -415,6 +479,7 @@ namespace KniffelConsole
         public int? Fours { get; set; }
         public int? Fives { get; set; }
         public int? Sixes { get; set; }
+        public int? Pair { get; set; }
         public int? ThreeOfAKind { get; set; }
         public int? FourOfAKind { get; set; }
         public int? FullHouse { get; set; }
@@ -422,10 +487,14 @@ namespace KniffelConsole
         public int? LargeStraight { get; set; }
         public int? Yahtzee { get; set; }
         public int? Chance { get; set; }
+        public int? TwoPairs { get; set; }
+        public int? MiniFullHouse { get; set; }
+        public int? ChancePlus { get; set; }
 
         public int UpperScore => (Ones ?? 0) + (Twos ?? 0) + (Threes ?? 0) + (Fours ?? 0) + (Fives ?? 0) + (Sixes ?? 0);
         public int UpperBonus => UpperScore >= 63 ? 35 : 0;
-        public int LowerScore => (ThreeOfAKind ?? 0) + (FourOfAKind ?? 0) + (FullHouse ?? 0) + (SmallStraight ?? 0) + (LargeStraight ?? 0) + (Yahtzee ?? 0) + (Chance ?? 0);
+        public int LowerScore => (ThreeOfAKind ?? 0) + (FourOfAKind ?? 0) + (FullHouse ?? 0) + (SmallStraight ?? 0) + (LargeStraight ?? 0) + (Yahtzee ?? 0) + (Chance ?? 0) + (Pair ?? 0);
+
         public int TotalScore => UpperScore + UpperBonus + LowerScore;
 
         public bool IsUsed(string category)
@@ -445,6 +514,10 @@ namespace KniffelConsole
                 "Große Straße" => LargeStraight.HasValue,
                 "Kniffel" => Yahtzee.HasValue,
                 "Chance" => Chance.HasValue,
+                "Zwei Paare" => TwoPairs.HasValue,
+                "Mini Full House" => MiniFullHouse.HasValue,
+                "Chance+" => ChancePlus.HasValue,
+
                 _ => false
             };
         }
@@ -468,6 +541,10 @@ namespace KniffelConsole
             Console.WriteLine($"Große Straße:    {LargeStraight}");
             Console.WriteLine($"Kniffel:         {Yahtzee}");
             Console.WriteLine($"Chance:          {Chance}");
+            Console.WriteLine("\n--- Bonus Sektion ---");
+            Console.WriteLine($"Zwei Paare:       {TwoPairs}");
+            Console.WriteLine($"Mini Full House:  {MiniFullHouse}");
+            Console.WriteLine($"Chance+:          {ChancePlus}");
             Console.WriteLine($"\nGESAMTPUNKTE:   {TotalScore}");
             Console.WriteLine("==========================\n");
         }
