@@ -16,9 +16,10 @@ namespace KniffelConsole
             {
                 Console.Clear();
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine("==============================================");
-                Console.WriteLine("         K N I F F E L  BY NOXIOUS 🎲         ");
-                Console.WriteLine("==============================================");
+                Console.WriteLine("==================================");
+                Console.WriteLine("         K N I F F E L 🎲         ");
+                Console.WriteLine("         BY NOXIOUSCODING         ");
+                Console.WriteLine("==================================");
                 Console.ResetColor();
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("1. Neues Spiel starten");
@@ -500,9 +501,11 @@ namespace KniffelConsole
 
         public int UpperScore => (Ones ?? 0) + (Twos ?? 0) + (Threes ?? 0) + (Fours ?? 0) + (Fives ?? 0) + (Sixes ?? 0);
         public int UpperBonus => UpperScore >= 63 ? 35 : 0;
-        public int LowerScore => (ThreeOfAKind ?? 0) + (FourOfAKind ?? 0) + (FullHouse ?? 0) + (SmallStraight ?? 0) + (LargeStraight ?? 0) + (Yahtzee ?? 0) + (Chance ?? 0) + (Pair ?? 0);
+        public int LowerScore => (Pair ?? 0) + (ThreeOfAKind ?? 0) + (FourOfAKind ?? 0) + (FullHouse ?? 0) + (SmallStraight ?? 0) + (LargeStraight ?? 0) + (Yahtzee ?? 0) + (Chance ?? 0); 
 
-        public int TotalScore => UpperScore + UpperBonus + LowerScore;
+        public int BonusScore => (TwoPairs ?? 0) + (MiniFullHouse ?? 0) + (ChancePlus ?? 0);
+
+        public int TotalScore => UpperScore + UpperBonus + LowerScore + BonusScore;
 
         public bool IsUsed(string category)
         {
@@ -522,6 +525,7 @@ namespace KniffelConsole
                 "Große Straße" => LargeStraight.HasValue,
                 "Kniffel" => Yahtzee.HasValue,
                 "Chance" => Chance.HasValue,
+
                 "Zwei Paare" => TwoPairs.HasValue,
                 "Mini Full House" => MiniFullHouse.HasValue,
                 "Chance+" => ChancePlus.HasValue,
@@ -533,6 +537,7 @@ namespace KniffelConsole
         public void Print()
         {
             Console.WriteLine("\n===== PUNKTETABELLE =====");
+            Console.WriteLine("\n--- Obere Sektion ---");
             Console.WriteLine($"Einsen:          {Ones}");
             Console.WriteLine($"Zweien:          {Twos}");
             Console.WriteLine($"Dreien:          {Threes}");
@@ -550,10 +555,13 @@ namespace KniffelConsole
             Console.WriteLine($"Große Straße:    {LargeStraight}");
             Console.WriteLine($"Kniffel:         {Yahtzee}");
             Console.WriteLine($"Chance:          {Chance}");
+            Console.WriteLine($"Untere Sektion:  {LowerScore}");
             Console.WriteLine("\n--- Bonus Sektion ---");
             Console.WriteLine($"Zwei Paare:      {TwoPairs}");
             Console.WriteLine($"Mini Full House: {MiniFullHouse}");
             Console.WriteLine($"Chance+:         {ChancePlus}");
+            Console.WriteLine($"Bonus Sektion:   {BonusScore}");
+            Console.WriteLine("==========================\n");
             Console.WriteLine($"\nGESAMTPUNKTE:  {TotalScore}");
             Console.WriteLine("==========================\n");
         }
