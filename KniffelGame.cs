@@ -183,7 +183,7 @@ namespace KniffelConsole
 
                     int[] dice = playerNames[p] == "Computer" ? PlayComputerRound() : PlayPlayerRound();
 
-                    string category = playerNames[p] == "Computer" ? ChooseComputerCategory(scores[p], dice) : ChooseCategory(scores[p]);
+                    string category = playerNames[p] == "Computer" ? ChooseComputerCategory(scores[p], dice) : ChooseCategory(scores[p], dice);
                     int points = EvaluateCategory(category, dice);
                     ApplyScore(scores[p], category, points);
 
@@ -328,7 +328,7 @@ namespace KniffelConsole
         // -------------------------------
         // Kategorieauswahl Spieler
         // -------------------------------
-        static string ChooseCategory(ScoreCard sc)
+        static string ChooseCategory(ScoreCard sc, int[] dice)
         {
             string[] categories = {
                 "Einsen","Zweien","Dreien","Vieren","Fünfen","Sechsen",
@@ -348,12 +348,33 @@ namespace KniffelConsole
                 Console.ResetColor();
 
                 Console.Write("Kategorie #: ");
-                if (int.TryParse(Console.ReadLine(), out int choice) &&
+                string input = Console.ReadLine();
+                if (int.TryParse(input, out int choice) &&
                     choice >= 1 && choice <= categories.Length)
                 {
-                    string cat = categories[choice - 1];
-                    if (!sc.IsUsed(cat)) return cat;
-                    Console.WriteLine("Kategorie bereits belegt!");
+                    string selectedCat = categories[choice - 1];
+                    if (sc.IsUsed(selectedCat))
+                    {
+                        Console.WriteLine("Kategorie bereits belegt!");
+                        continue;
+                    }
+                    int points = EvaluateCategory(selectedCat, dice);
+
+                    if (points == 0)
+                    {
+                        // Strafpunkte vergeben
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Falsche Kategorie gewählt! Du erhältst 5 Strafpunkte!");
+                        Console.ResetColor();
+                        sc.Penalty += 5;
+                        continue;
+                    }
+
+                    return selectedCat; // gültige Kategorie
+                }
+                else
+                {
+                    Console.WriteLine("Ungültige Eingabe!");
                 }
             }
         }
@@ -505,13 +526,17 @@ namespace KniffelConsole
         public int? MiniFullHouse { get; set; }
         public int? ChancePlus { get; set; }
 
+        public int Penalty { get; set; } = 0;
+
         public int UpperScore => (Ones ?? 0) + (Twos ?? 0) + (Threes ?? 0) + (Fours ?? 0) + (Fives ?? 0) + (Sixes ?? 0);
         public int UpperBonus => UpperScore >= 63 ? 35 : 0;
         public int LowerScore => (Pair ?? 0) + (ThreeOfAKind ?? 0) + (FourOfAKind ?? 0) + (FullHouse ?? 0) + (SmallStraight ?? 0) + (LargeStraight ?? 0) + (Yahtzee ?? 0) + (Chance ?? 0); 
 
         public int BonusScore => (TwoPairs ?? 0) + (MiniFullHouse ?? 0) + (ChancePlus ?? 0);
 
-        public int TotalScore => UpperScore + UpperBonus + LowerScore + BonusScore;
+        
+
+        public int TotalScore => UpperScore + UpperBonus + LowerScore + BonusScore - Penalty;
 
         public bool IsUsed(string category)
         {
@@ -568,6 +593,7 @@ namespace KniffelConsole
             Console.WriteLine($"Chance+:         {ChancePlus}");
             Console.WriteLine($"Bonus Sektion:   {BonusScore}");
             Console.WriteLine("==========================\n");
+            Console.WriteLine($"Strafpunkte:     {Penalty}");
             Console.WriteLine($"\nGESAMTPUNKTE:  {TotalScore}");
             Console.WriteLine("==========================\n");
         }
