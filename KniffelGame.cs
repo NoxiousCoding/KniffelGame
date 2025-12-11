@@ -60,12 +60,18 @@ namespace KniffelConsole
         static void ShowRules()
         {
             Console.Clear();
-            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("============== REGELN ==============");
             Console.ResetColor();
+            Console.ForegroundColor= ConsoleColor.Magenta;
             Console.WriteLine("1. Spielregeln anzeigen");
+            Console.ResetColor();
+            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("2. Kategorien-Erklärungen");
+            Console.ResetColor();
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("3. Zurück zum Hauptmenü");
+            Console.ResetColor();
             Console.WriteLine("------------------------------------");
             Console.Write("Auswahl: ");
 
@@ -74,7 +80,7 @@ namespace KniffelConsole
             {
                 case "1":
                     Console.Clear();
-                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.ForegroundColor = ConsoleColor.Magenta;
                     Console.WriteLine("============== SPIELREGELN ==============");
                     Console.ResetColor();
                     Console.WriteLine("• 5 Würfel");
