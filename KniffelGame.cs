@@ -114,6 +114,7 @@ namespace KniffelConsole
                     Console.WriteLine("• Zwei Paare: Zwei verschiedene Paare → 15 Punkte");
                     Console.WriteLine("• Mini-Full-House: Zwei Paare → 10 Punkte");
                     Console.WriteLine("• Chance+: Summe aller Würfel + 5 Bonuspunkte, wenn Summe ≥ 20");
+                    Console.WriteLine("• Lucky Seven: Alle Würfel ergeben zusammen 7 → + 20 Punkte");
                     Console.WriteLine("\nENTER zum Zurückkehren...");
                     Console.ReadLine();
                     break;
@@ -151,6 +152,21 @@ namespace KniffelConsole
             Console.Write("Computer als Spieler hinzufügen? (j/n): ");
             bool includeComputer = Console.ReadLine().Trim().ToLower() == "j";
 
+            Difficulty compDifficulty = Difficulty.Medium;
+
+            if (includeComputer)
+            {
+                Console.Write("Schwierigkeit des Computers (1=Einfach, 2=Mittel, 3=Schwer): ");
+                int diffInput = int.Parse(Console.ReadLine());
+                compDifficulty = diffInput switch
+                {
+                    1 => Difficulty.Easy,
+                    2 => Difficulty.Medium,
+                    3 => Difficulty.Hard,
+                    _ => Difficulty.Medium
+                };
+            }
+
             int totalPlayers = includeComputer ? numPlayers + 1 : numPlayers;
 
             string[] playerNames = new string[totalPlayers];
@@ -183,7 +199,7 @@ namespace KniffelConsole
 
                     int[] dice = playerNames[p] == "Computer" ? PlayComputerRound() : PlayPlayerRound();
 
-                    string category = playerNames[p] == "Computer" ? ChooseComputerCategory(scores[p], dice) : ChooseCategory(scores[p], dice);
+                    string category = playerNames[p] == "Computer" ? ChooseComputerCategory(scores[p], dice, compDifficulty) : ChooseCategory(scores[p], dice);
                     int points = EvaluateCategory(category, dice);
                     ApplyScore(scores[p], category, points);
 
@@ -296,11 +312,20 @@ namespace KniffelConsole
             // Endgültige Würfel in Rot
             PrintDice(dice, ConsoleColor.Red);
         }
+        // -------------------------------
+        // KI-Schwierigkeitsgrad
+        // -------------------------------
+        public enum Difficulty
+        {
+            Easy,
+            Medium,
+            Hard
+        }
 
         // -------------------------------
         // KI-Logik
         // -------------------------------
-        static bool[] DecideDiceToKeep(int[] dice)
+        static bool[] DecideDiceToKeep(int[] dice, Difficulty difficulty = Difficulty.Medium)
         {
             bool[] keep = new bool[5];
             var counts = new int[7];
@@ -309,18 +334,50 @@ namespace KniffelConsole
             int maxCount = counts.Max();
             int mostFrequent = Array.IndexOf(counts, maxCount);
 
-            for (int i = 0; i < 5; i++)
-                if (dice[i] == mostFrequent) keep[i] = true;
-
-            int[] unique = dice.Distinct().OrderBy(x => x).ToArray();
-            if (unique.Length >= 4)
+            if (difficulty == Difficulty.Easy)
             {
+                // Easy: zufällige Würfel behalten
                 for (int i = 0; i < 5; i++)
-                    if (unique.Contains(dice[i])) keep[i] = true;
+                    keep[i] = rnd.NextDouble() < 0.5;
             }
 
-            for (int i = 0; i < 5; i++)
-                if (dice[i] >= 5) keep[i] = true;
+            else if (difficulty == Difficulty.Medium)
+            {
+                // Medium: behalte die häufigsten Würfel
+                for (int i = 0; i < 5; i++)
+                    if (dice[i] == mostFrequent) keep[i] = true;
+            }
+
+            else if (difficulty == Difficulty.Hard)
+            {
+                // Hard: Optimale KI
+                // 1. Priorität: Kniffel, Full House, Große Straße
+                if (maxCount >= 3)
+                {
+                    for (int i = 0; i < 5; i++)
+                        if (dice[i] == mostFrequent) keep[i] = true;
+                }
+
+                // 2. Kleine/Große Straße: aufeinanderfolgende Würfel behalten
+                int[] unique = dice.Distinct().OrderBy(x => x).ToArray();
+                if (unique.Length >= 4)
+                {
+                    for (int i = 0; i < 5; i++)
+                        if (unique.Contains(dice[i])) keep[i] = true;
+                }
+
+                // 3. Bonus-Kategorie Lucky Seven
+                int sum = dice.Sum();
+                if (sum < 7)
+                {
+                    for (int i = 0; i < 5; i++)
+                        if (dice[i] <= 2) keep[i] = true;
+                }
+
+                // 4. Chance+: Würfel >= 4 behalten
+                for (int i = 0; i < 5; i++)
+                    if (dice[i] >= 4) keep[i] = true;
+            }
 
             return keep;
         }
@@ -334,7 +391,7 @@ namespace KniffelConsole
                 "Einsen","Zweien","Dreien","Vieren","Fünfen","Sechsen",
                 "Paar","Dreierpasch","Viererpasch","Full House",
                 "Kleine Straße","Große Straße","Kniffel","Chance",
-                "Zwei Paare","Mini Full House","Chance+"
+                "Zwei Paare","Mini Full House","Chance+", "Lucky Seven"
             };
 
             while (true)
@@ -382,31 +439,50 @@ namespace KniffelConsole
         // -------------------------------
         // Kategorieauswahl Computer
         // -------------------------------
-        static string ChooseComputerCategory(ScoreCard sc, int[] dice)
+        static string ChooseComputerCategory(ScoreCard sc, int[] dice, Difficulty difficulty)
         {
             string[] categories = {
                 "Einsen","Zweien","Dreien","Vieren","Fünfen","Sechsen",
                 "Paar","Dreierpasch","Viererpasch","Full House",
                 "Kleine Straße","Große Straße","Kniffel","Chance",
-                "Zwei Paare","Mini Full House","Chance+"
+                "Zwei Paare","Mini Full House","Chance+","Lucky Seven"
             };
+
+            if (difficulty == Difficulty.Easy)
+            {
+                // Zufällige verfügbare Kategorie
+                var available = categories.Where(c => !sc.IsUsed(c)).ToArray();
+                return available[rnd.Next(available.Length)];
+            }
 
             int bestScore = -1;
             string bestCat = "";
+            
 
             foreach (var cat in categories)
             {
                 if (!sc.IsUsed(cat))
                 {
                     int pts = EvaluateCategory(cat, dice);
-                    if (cat == "Kniffel" && pts == 50) pts += 20;
-                    if ((cat == "Full House" || cat == "Große Straße") && pts > 0) pts += 10;
-                    if (cat == "Chance+" && pts >= 25) pts += 5;
-
-
-                    if (pts > bestScore)
+                    int priority = 0;
+                    if (difficulty == Difficulty.Medium)
                     {
-                        bestScore = pts;
+                        if (cat == "Kniffel" && pts == 50) priority += 20;
+                        if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 5;
+                        if (cat == "Chance+" && pts >= 25) priority += 1;
+                        if (cat == "Lucky Seven" && pts == 7) priority += 10;
+                    }
+                    else if (difficulty == Difficulty.Hard)
+                    {
+                        if (cat == "Kniffel" && pts == 50) priority += 50;
+                        if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 10;
+                        if (cat == "Chance+" && pts >= 25) priority += 5;
+                        if (cat == "Lucky Seven" && pts == 7) priority += 20;
+                    }
+
+                    if (pts + priority > bestScore)
+                    {
+                        bestScore = pts + priority;
                         bestCat = cat;
                     }
                 }
@@ -444,6 +520,7 @@ namespace KniffelConsole
                 "Zwei Paare" => count.Count(c => c >= 2) >= 2 ? 15 : 0,
                 "Mini Full House" => (count.Count(c => c == 2) == 2) ? 10 : 0,
                 "Chance+" => sum >= 20 ? sum + 5 : sum,
+                "Lucky Seven" => sum == 7 ? 20 : 0,
 
                 _ => 0
             };
@@ -467,9 +544,13 @@ namespace KniffelConsole
                 case "Große Straße": score.LargeStraight = points; break;
                 case "Kniffel": score.Yahtzee = points; break;
                 case "Chance": score.Chance = points; break;
+
                 case "Zwei Paare": score.TwoPairs = points; break;
                 case "Mini Full House": score.MiniFullHouse = points; break;
                 case "Chance+": score.ChancePlus = points; break;
+                case "Lucky Seven": score.LuckySeven = points; break;
+
+
 
             }
         }
@@ -525,6 +606,8 @@ namespace KniffelConsole
         public int? TwoPairs { get; set; }
         public int? MiniFullHouse { get; set; }
         public int? ChancePlus { get; set; }
+        public int? LuckySeven { get; set; }
+
 
         public int Penalty { get; set; } = 0;
 
@@ -532,7 +615,7 @@ namespace KniffelConsole
         public int UpperBonus => UpperScore >= 63 ? 35 : 0;
         public int LowerScore => (Pair ?? 0) + (ThreeOfAKind ?? 0) + (FourOfAKind ?? 0) + (FullHouse ?? 0) + (SmallStraight ?? 0) + (LargeStraight ?? 0) + (Yahtzee ?? 0) + (Chance ?? 0); 
 
-        public int BonusScore => (TwoPairs ?? 0) + (MiniFullHouse ?? 0) + (ChancePlus ?? 0);
+        public int BonusScore => (TwoPairs ?? 0) + (MiniFullHouse ?? 0) + (ChancePlus ?? 0) + (LuckySeven ?? 0);
 
         
 
@@ -560,6 +643,8 @@ namespace KniffelConsole
                 "Zwei Paare" => TwoPairs.HasValue,
                 "Mini Full House" => MiniFullHouse.HasValue,
                 "Chance+" => ChancePlus.HasValue,
+                "Lucky Seven" => LuckySeven.HasValue,
+
 
                 _ => false
             };
@@ -591,6 +676,7 @@ namespace KniffelConsole
             Console.WriteLine($"Zwei Paare:      {TwoPairs}");
             Console.WriteLine($"Mini Full House: {MiniFullHouse}");
             Console.WriteLine($"Chance+:         {ChancePlus}");
+            Console.WriteLine($"Lucky Seven:    {LuckySeven}");
             Console.WriteLine($"Bonus Sektion:   {BonusScore}");
             Console.WriteLine("==========================\n");
             Console.WriteLine($"Strafpunkte:     {Penalty}");
