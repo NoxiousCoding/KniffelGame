@@ -16,14 +16,19 @@ namespace KniffelConsole
             {
                 Console.Clear();
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine("====================================");
-                Console.WriteLine("         K N I F F E L   🎲         ");
-                Console.WriteLine("====================================");
+                Console.WriteLine("==============================================");
+                Console.WriteLine("         K N I F F E L  BY NOXIOUS 🎲         ");
+                Console.WriteLine("==============================================");
                 Console.ResetColor();
-
+                Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("1. Neues Spiel starten");
+                Console.ResetColor();
+                Console.ForegroundColor = ConsoleColor.Magenta;
                 Console.WriteLine("2. Regeln anzeigen");
+                Console.ResetColor();
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("3. Beenden");
+                Console.ResetColor();
                 Console.WriteLine("------------------------------------");
                 Console.Write("Auswahl: ");
 
@@ -88,6 +93,7 @@ namespace KniffelConsole
                     Console.WriteLine("=========== KATEGORIEN ===========");
                     Console.ResetColor();
                     Console.WriteLine("• Einsen bis Sechsen: Summe aller gewürfelten Augen dieser Zahl");
+                    Console.WriteLine("• Paar: Mindestens ein Paar → Summe des höchsten Paars ");
                     Console.WriteLine("• Dreierpasch: Mindestens drei gleiche Würfel, Summe aller Würfel");
                     Console.WriteLine("• Viererpasch: Mindestens vier gleiche Würfel, Summe aller Würfel");
                     Console.WriteLine("• Full House: 3 gleiche + 2 gleiche → 25 Punkte");
@@ -319,8 +325,9 @@ namespace KniffelConsole
         {
             string[] categories = {
                 "Einsen","Zweien","Dreien","Vieren","Fünfen","Sechsen",
-                "Dreierpasch","Viererpasch","Full House",
-                "Kleine Straße","Große Straße","Kniffel","Chance","Zwei Paare","Mini Full House","Chance+"
+                "Paar","Dreierpasch","Viererpasch","Full House",
+                "Kleine Straße","Große Straße","Kniffel","Chance",
+                "Zwei Paare","Mini Full House","Chance+"
             };
 
             while (true)
@@ -507,6 +514,7 @@ namespace KniffelConsole
                 "Vieren" => Fours.HasValue,
                 "Fünfen" => Fives.HasValue,
                 "Sechsen" => Sixes.HasValue,
+                "Paar" => Pair.HasValue,
                 "Dreierpasch" => ThreeOfAKind.HasValue,
                 "Viererpasch" => FourOfAKind.HasValue,
                 "Full House" => FullHouse.HasValue,
@@ -525,15 +533,16 @@ namespace KniffelConsole
         public void Print()
         {
             Console.WriteLine("\n===== PUNKTETABELLE =====");
-            Console.WriteLine($"Einsen:         {Ones}");
-            Console.WriteLine($"Zweien:         {Twos}");
-            Console.WriteLine($"Dreien:         {Threes}");
-            Console.WriteLine($"Vieren:         {Fours}");
-            Console.WriteLine($"Fünfen:         {Fives}");
-            Console.WriteLine($"Sechsen:        {Sixes}");
-            Console.WriteLine($"Obere Sektion:  {UpperScore}");
-            Console.WriteLine($"Bonus (63+):    {UpperBonus}");
+            Console.WriteLine($"Einsen:          {Ones}");
+            Console.WriteLine($"Zweien:          {Twos}");
+            Console.WriteLine($"Dreien:          {Threes}");
+            Console.WriteLine($"Vieren:          {Fours}");
+            Console.WriteLine($"Fünfen:          {Fives}");
+            Console.WriteLine($"Sechsen:         {Sixes}");
+            Console.WriteLine($"Obere Sektion:   {UpperScore}");
+            Console.WriteLine($"Bonus (63+):     {UpperBonus}");
             Console.WriteLine("\n--- Untere Sektion ---");
+            Console.WriteLine($"Paar:            {Pair}");
             Console.WriteLine($"Dreierpasch:     {ThreeOfAKind}");
             Console.WriteLine($"Viererpasch:     {FourOfAKind}");
             Console.WriteLine($"Full House:      {FullHouse}");
@@ -542,10 +551,10 @@ namespace KniffelConsole
             Console.WriteLine($"Kniffel:         {Yahtzee}");
             Console.WriteLine($"Chance:          {Chance}");
             Console.WriteLine("\n--- Bonus Sektion ---");
-            Console.WriteLine($"Zwei Paare:       {TwoPairs}");
-            Console.WriteLine($"Mini Full House:  {MiniFullHouse}");
-            Console.WriteLine($"Chance+:          {ChancePlus}");
-            Console.WriteLine($"\nGESAMTPUNKTE:   {TotalScore}");
+            Console.WriteLine($"Zwei Paare:      {TwoPairs}");
+            Console.WriteLine($"Mini Full House: {MiniFullHouse}");
+            Console.WriteLine($"Chance+:         {ChancePlus}");
+            Console.WriteLine($"\nGESAMTPUNKTE:  {TotalScore}");
             Console.WriteLine("==========================\n");
         }
     }
