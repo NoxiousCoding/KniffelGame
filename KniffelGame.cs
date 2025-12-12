@@ -213,7 +213,7 @@ namespace KniffelConsole
                 }
             }
 
-            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.WriteLine("\n====== SPIEL ENDE ======");
             Console.ResetColor();
 
@@ -499,6 +499,29 @@ namespace KniffelConsole
             foreach (int d in dice) count[d]++;
             int sum = dice.Sum();
             int[] s = dice.OrderBy(x => x).ToArray();
+            int[] distinct = dice.Distinct().OrderBy(x => x).ToArray();
+
+
+            // Hilfsfunktion:
+            bool HasRun(int len)
+            {
+                if (distinct.Length < len) return false;
+                int run = 1;
+                for (int i = 1; i < distinct.Length; i++)
+                {
+                    if (distinct[i] == distinct[i - 1] + 1)
+                    {
+                        run++;
+                        if (run >= len) return true;
+                    }
+                    else
+                    {
+                        run = 1;
+                    }
+                }
+                return false;
+            }
+
 
             return cat switch
             {
@@ -512,8 +535,8 @@ namespace KniffelConsole
                 "Dreierpasch" => count.Any(c => c >= 3) ? sum : 0,
                 "Viererpasch" => count.Any(c => c >= 4) ? sum : 0,
                 "Full House" => (count.Contains(3) && count.Contains(2)) ? 25 : 0,
-                "Kleine Straße" => (s.SequenceEqual(new[] { 1, 2, 3, 4, 5 }) || s.SequenceEqual(new[] { 2, 3, 4, 5, 6 })) ? 30 : 0,
-                "Große Straße" => (s.SequenceEqual(new[] { 2, 3, 4, 5, 6 })) ? 40 : 0,
+                "Kleine Straße" => (s.Distinct().SequenceEqual(new[] { 1, 2, 3, 4}) || s.Distinct().SequenceEqual(new[] { 2, 3, 4, 5}) || s.Distinct().SequenceEqual(new[] {3, 4 , 5, 6})) ? 30 : 0, 
+                "Große Straße" => (s.Distinct().SequenceEqual(new[] { 1, 2, 3, 4, 5 }) || s.Distinct().SequenceEqual(new[] {2, 3, 4, 5, 6})) ? 40 : 0,
                 "Kniffel" => count.Any(c => c == 5) ? 50 : 0,
                 "Chance" => sum,
 
