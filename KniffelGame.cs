@@ -112,7 +112,7 @@ namespace KniffelConsole
                     Console.WriteLine("=========== BONUS-KATEGORIEN ===========");
                     Console.ResetColor();
                     Console.WriteLine("• Zwei Paare: Zwei verschiedene Paare → 15 Punkte");
-                    Console.WriteLine("• Mini-Full-House: Zwei Paare → 10 Punkte");
+                    Console.WriteLine("• Mini-Full-House: 3 Gleiche + 2 unterschiedliche Würfel (kein Paar) → 10 Punkte");
                     Console.WriteLine("• Chance+: Summe aller Würfel + 5 Bonuspunkte, wenn Summe ≥ 20");
                     Console.WriteLine("• Lucky Seven: Alle Würfel ergeben zusammen 7 → + 20 Punkte");
                     Console.WriteLine("\nENTER zum Zurückkehren...");
@@ -594,7 +594,9 @@ namespace KniffelConsole
 
                 //"Zwei Paare" => count.Count(c => c >= 2) >= 2 ? 15 : 0,
                 "Zwei Paare" => EvaluateTwoPairs(count),
-                "Mini Full House" => (count.Count(c => c == 2) == 2) ? 10 : 0,
+                //"Mini Full House" => (count.Count(c => c == 2) == 2) ? 10 : 0,
+                "Mini Full House" => count.Contains(3) && count.Count(c => c == 2) == 0 ? 10 : 0,
+
                 "Chance+" => sum >= 20 ? sum + 5 : sum,
                 "Lucky Seven" => sum == 7 ? 20 : 0,
 
