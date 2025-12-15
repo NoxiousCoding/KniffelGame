@@ -201,7 +201,7 @@ namespace KniffelConsole
 
                     string category = playerNames[p] == "Computer" ? ChooseComputerCategory(scores[p], dice, compDifficulty) : ChooseCategory(scores[p], dice);
                     int points = EvaluateCategory(category, dice);
-                    ApplyScore(scores[p], category, points);
+                    scores[p].SetScore(category, points);
 
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.WriteLine($"{playerNames[p]} belegt {category} mit {points} Punkten.");
@@ -549,12 +549,24 @@ namespace KniffelConsole
             static int EvaluateTwoPairs(int[] count)
             {
                 List<int> pairs = new List<int>();
-                for (int i = 6; i >= 1; i--)
-                    if (count[i] >= 2)
-                        pairs.Add(i);
 
-                return pairs.Count >= 2 ? pairs[0] * 2 + pairs[1] * 2 : 0;
+                for (int i = 6; i >= 1; i--)
+                {
+                    int pairCount = count[i] / 2; // Wie viele Paare möglich sind
+                    for (int j = 0; j < pairCount; j++)
+                    {
+                        pairs.Add(i);
+                    }
+                }
+
+                if (pairs.Count >= 2)
+                {
+                    // Summe der **zwei höchsten Paare**
+                    return pairs[0] * 2 + pairs[1] * 2;
+                }
+                return 0;
             }
+
 
 
 
@@ -590,8 +602,8 @@ namespace KniffelConsole
             };
         }
 
-
-        static void ApplyScore(ScoreCard score, string cat, int points)
+        // BACKUP - ApplyScore Funktion nicht mehr benötigt
+        /*static void ApplyScore(ScoreCard score, string cat, int points)
         {
             switch (cat)
             {
@@ -618,7 +630,7 @@ namespace KniffelConsole
 
 
             }
-        }
+        }*/
 
         // -------------------------------
         // ASCII-Würfel mit optionaler Punktfarbe
