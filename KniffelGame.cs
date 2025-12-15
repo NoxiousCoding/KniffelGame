@@ -89,6 +89,7 @@ namespace KniffelConsole
                     Console.WriteLine("• 13 Runden – jede Kategorie genau einmal");
                     Console.WriteLine("• Kategorien: Einsen, Zweien, ... Kniffel (50 Punkte)");
                     Console.WriteLine("• Bonus: 35 Punkte ab 63 Punkten in der oberen Sektion");
+                    Console.WriteLine("• Du kannst eine Kategorie locken und die Punkte damit verdoppeln");
                     Console.WriteLine("• Computer kann optional als Spieler teilnehmen");
                     Console.WriteLine("\nENTER zum Zurückkehren...");
                     Console.ReadLine();
@@ -399,10 +400,18 @@ namespace KniffelConsole
                 for (int i = 0; i < categories.Length; i++)
                 {
                     bool used = sc.IsUsed(categories[i]);
-                    Console.ForegroundColor = used ? ConsoleColor.DarkGray : ConsoleColor.White;
-                    Console.WriteLine($"{i + 1}. {categories[i]} {(used ? "(belegt)" : "")}");
+                    bool locked = sc.LockedCategory == categories[i];
+                    if (locked)
+                        Console.ForegroundColor = ConsoleColor.Cyan; // gelockte Kategorie
+                    else if (used)
+                        Console.ForegroundColor = ConsoleColor.DarkGray; // belegte Kategorie
+                    else
+                        Console.ForegroundColor = ConsoleColor.White; // verfügbar
+
+                    Console.WriteLine($"{i + 1}. {categories[i]} {(used ? "(belegt)" : locked ? "(LOCKED)" : "")}");
                 }
                 Console.ResetColor();
+
 
                 Console.Write("Kategorie #: ");
                 string input = Console.ReadLine();
@@ -416,6 +425,20 @@ namespace KniffelConsole
                         continue;
                     }
                     int points = EvaluateCategory(selectedCat, dice);
+                    if (!sc.LockUsed)
+                    {
+                        Console.Write("Möchtest du diese Kategorie locken und Punkte verdoppeln? (j/n): ");
+                        if (Console.ReadLine().Trim().ToLower() == "j")
+                        {
+                            sc.LockedCategory = selectedCat;
+                            sc.LockUsed = true;
+                            points *= 2; // Punkte verdoppeln
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.WriteLine($"Kategorie {selectedCat} ist jetzt LOCKED! Punkte verdoppelt.");
+                            Console.ResetColor();
+                        }
+                    }
+
 
                     if (points == 0)
                     {
@@ -428,12 +451,15 @@ namespace KniffelConsole
                     }
                     sc.SetScore(selectedCat, points);
 
+
                     return selectedCat; // gültige Kategorie
                 }
                 else
                 {
                     Console.WriteLine("Ungültige Eingabe!");
                 }
+
+
             }
         }
 
@@ -474,6 +500,7 @@ namespace KniffelConsole
                             if (cat == "Kniffel" && pts == 50) priority += 20;
                             if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 5;
                             if (cat == "Chance+" && pts >= 25) priority += 1;
+                            if (cat == "Mini Full House" && pts > 0) priority += 3;
                             if (cat == "Lucky Seven" && pts == 7) priority += 10;
                         }
                         else if (difficulty == Difficulty.Hard)
@@ -481,6 +508,7 @@ namespace KniffelConsole
                             if (cat == "Kniffel" && pts == 50) priority += 50;
                             if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 10;
                             if (cat == "Chance+" && pts >= 25) priority += 5;
+                            if (cat == "Mini Full House" && pts > 0) priority += 8;
                             if (cat == "Lucky Seven" && pts == 7) priority += 20;
                         }
 
@@ -696,7 +724,10 @@ namespace KniffelConsole
 
         public int BonusScore => (TwoPairs ?? 0) + (MiniFullHouse ?? 0) + (ChancePlus ?? 0) + (LuckySeven ?? 0);
 
-        
+        public string LockedCategory { get; set; } = null;
+        public bool LockUsed { get; set; } = false;
+
+
 
         public int TotalScore => UpperScore + UpperBonus + LowerScore + BonusScore - Penalty;
         public void SetScore(string category, int points)
