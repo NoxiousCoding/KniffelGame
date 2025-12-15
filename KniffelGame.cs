@@ -424,8 +424,9 @@ namespace KniffelConsole
                         Console.WriteLine("Falsche Kategorie gewählt! Du erhältst 5 Strafpunkte!");
                         Console.ResetColor();
                         sc.Penalty += 5;
-                        continue;
+                        
                     }
+                    sc.SetScore(selectedCat, points);
 
                     return selectedCat; // gültige Kategorie
                 }
@@ -448,47 +449,62 @@ namespace KniffelConsole
                 "Zwei Paare","Mini Full House","Chance+","Lucky Seven"
             };
 
+            string selectedCat;
+
             if (difficulty == Difficulty.Easy)
             {
                 // Zufällige verfügbare Kategorie
                 var available = categories.Where(c => !sc.IsUsed(c)).ToArray();
-                return available[rnd.Next(available.Length)];
+                selectedCat = available[rnd.Next(available.Length)];
             }
-
-            int bestScore = -1;
-            string bestCat = "";
-            
-
-            foreach (var cat in categories)
+            else
             {
-                if (!sc.IsUsed(cat))
-                {
-                    int pts = EvaluateCategory(cat, dice);
-                    int priority = 0;
-                    if (difficulty == Difficulty.Medium)
-                    {
-                        if (cat == "Kniffel" && pts == 50) priority += 20;
-                        if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 5;
-                        if (cat == "Chance+" && pts >= 25) priority += 1;
-                        if (cat == "Lucky Seven" && pts == 7) priority += 10;
-                    }
-                    else if (difficulty == Difficulty.Hard)
-                    {
-                        if (cat == "Kniffel" && pts == 50) priority += 50;
-                        if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 10;
-                        if (cat == "Chance+" && pts >= 25) priority += 5;
-                        if (cat == "Lucky Seven" && pts == 7) priority += 20;
-                    }
+                int bestScore = -1;
+                selectedCat = "";
 
-                    if (pts + priority > bestScore)
+                foreach (var cat in categories)
+                {
+                    if (!sc.IsUsed(cat))
                     {
-                        bestScore = pts + priority;
-                        bestCat = cat;
+                        int pts = EvaluateCategory(cat, dice);
+                        int priority = 0;
+
+                        if (difficulty == Difficulty.Medium)
+                        {
+                            if (cat == "Kniffel" && pts == 50) priority += 20;
+                            if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 5;
+                            if (cat == "Chance+" && pts >= 25) priority += 1;
+                            if (cat == "Lucky Seven" && pts == 7) priority += 10;
+                        }
+                        else if (difficulty == Difficulty.Hard)
+                        {
+                            if (cat == "Kniffel" && pts == 50) priority += 50;
+                            if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 10;
+                            if (cat == "Chance+" && pts >= 25) priority += 5;
+                            if (cat == "Lucky Seven" && pts == 7) priority += 20;
+                        }
+
+                        if (pts + priority > bestScore)
+                        {
+                            bestScore = pts + priority;
+                            selectedCat = cat;
+                        }
                     }
                 }
             }
-            return bestCat;
+
+            // Punkte berechnen und eintragen
+            int points = EvaluateCategory(selectedCat, dice);
+
+            if (points == 0)
+            {
+                sc.Penalty += 5; // Strafpunkte für Computer ebenfalls
+            }
+
+            sc.SetScore(selectedCat, points);
+            return selectedCat;
         }
+
 
         // -------------------------------
         // Punkteberechnung
@@ -573,6 +589,7 @@ namespace KniffelConsole
                 _ => 0
             };
         }
+
 
         static void ApplyScore(ScoreCard score, string cat, int points)
         {
@@ -668,6 +685,33 @@ namespace KniffelConsole
         
 
         public int TotalScore => UpperScore + UpperBonus + LowerScore + BonusScore - Penalty;
+        public void SetScore(string category, int points)
+        {
+            switch (category)
+            {
+                case "Einsen": Ones = points; break;
+                case "Zweien": Twos = points; break;
+                case "Dreien": Threes = points; break;
+                case "Vieren": Fours = points; break;
+                case "Fünfen": Fives = points; break;
+                case "Sechsen": Sixes = points; break;
+                case "Paar": Pair = points; break;
+                case "Dreierpasch": ThreeOfAKind = points; break;
+                case "Viererpasch": FourOfAKind = points; break;
+                case "Full House": FullHouse = points; break;
+                case "Kleine Straße": SmallStraight = points; break;
+                case "Große Straße": LargeStraight = points; break;
+                case "Kniffel": Yahtzee = points; break;
+                case "Chance": Chance = points; break;
+                case "Zwei Paare": TwoPairs = points; break;
+                case "Mini Full House": MiniFullHouse = points; break;
+                case "Chance+": ChancePlus = points; break;
+                case "Lucky Seven": LuckySeven = points; break;
+                default: break;
+            }
+        }
+
+
 
         public bool IsUsed(string category)
         {
