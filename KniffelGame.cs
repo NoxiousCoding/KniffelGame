@@ -522,6 +522,25 @@ namespace KniffelConsole
                 return false;
             }
 
+            static int EvaluatePair(int[] count)
+            {
+                for (int i = 6; i >= 1; i--)
+                    if (count[i] >= 2)
+                        return i * 2;
+                return 0;
+            }
+
+            static int EvaluateTwoPairs(int[] count)
+            {
+                List<int> pairs = new List<int>();
+                for (int i = 6; i >= 1; i--)
+                    if (count[i] >= 2)
+                        pairs.Add(i);
+
+                return pairs.Count >= 2 ? pairs[0] * 2 + pairs[1] * 2 : 0;
+            }
+
+
 
             return cat switch
             {
@@ -531,16 +550,22 @@ namespace KniffelConsole
                 "Vieren" => count[4] * 4,
                 "Fünfen" => count[5] * 5,
                 "Sechsen" => count[6] * 6,
-                "Paar" => count.Any(c => c >= 2) ? sum : 0,
+                //"Paar" => count.Any(c => c >= 2) ? sum : 0,
+                "Paar" => EvaluatePair(count),
                 "Dreierpasch" => count.Any(c => c >= 3) ? sum : 0,
                 "Viererpasch" => count.Any(c => c >= 4) ? sum : 0,
                 "Full House" => (count.Contains(3) && count.Contains(2)) ? 25 : 0,
-                "Kleine Straße" => (s.Distinct().SequenceEqual(new[] { 1, 2, 3, 4}) || s.Distinct().SequenceEqual(new[] { 2, 3, 4, 5}) || s.Distinct().SequenceEqual(new[] {3, 4 , 5, 6})) ? 30 : 0, 
-                "Große Straße" => (s.Distinct().SequenceEqual(new[] { 1, 2, 3, 4, 5 }) || s.Distinct().SequenceEqual(new[] {2, 3, 4, 5, 6})) ? 40 : 0,
+                //"Kleine Straße" => (s.Distinct().SequenceEqual(new[] { 1, 2, 3, 4}) || s.Distinct().SequenceEqual(new[] { 2, 3, 4, 5}) || s.Distinct().SequenceEqual(new[] {3, 4 , 5, 6})) ? 30 : 0, 
+                //"Große Straße" => (s.Distinct().SequenceEqual(new[] { 1, 2, 3, 4, 5 }) || s.Distinct().SequenceEqual(new[] {2, 3, 4, 5, 6})) ? 40 : 0,
+                // kleine Straße: irgendeine Lauffolge von 4 aufeinanderfolgenden Zahlen in den distinct-Werten
+                "Kleine Straße" => HasRun(4) ? 30 : 0,
+                // große Straße: Lauffolge von 5
+                "Große Straße" => HasRun(5) ? 40 : 0,
                 "Kniffel" => count.Any(c => c == 5) ? 50 : 0,
                 "Chance" => sum,
 
-                "Zwei Paare" => count.Count(c => c >= 2) >= 2 ? 15 : 0,
+                //"Zwei Paare" => count.Count(c => c >= 2) >= 2 ? 15 : 0,
+                "Zwei Paare" => EvaluateTwoPairs(count),
                 "Mini Full House" => (count.Count(c => c == 2) == 2) ? 10 : 0,
                 "Chance+" => sum >= 20 ? sum + 5 : sum,
                 "Lucky Seven" => sum == 7 ? 20 : 0,
