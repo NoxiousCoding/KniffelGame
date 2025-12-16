@@ -431,10 +431,8 @@ namespace KniffelConsole
                         if (Console.ReadLine().Trim().ToLower() == "j")
                         {
                             sc.LockedCategory = selectedCat;
-                            sc.LockUsed = true;
-                            points *= 2; // Punkte verdoppeln
                             Console.ForegroundColor = ConsoleColor.Cyan;
-                            Console.WriteLine($"Kategorie {selectedCat} ist jetzt LOCKED! Punkte verdoppelt.");
+                            Console.WriteLine($"Kategorie {selectedCat} ist jetzt LOCKED!");
                             Console.ResetColor();
                         }
                     }
@@ -447,9 +445,8 @@ namespace KniffelConsole
                         Console.WriteLine("Falsche Kategorie gewählt! Du erhältst 5 Strafpunkte!");
                         Console.ResetColor();
                         sc.Penalty += 5;
-                        
+
                     }
-                    sc.SetScore(selectedCat, points);
 
 
                     return selectedCat; // gültige Kategorie
@@ -715,6 +712,8 @@ namespace KniffelConsole
         public int? ChancePlus { get; set; }
         public int? LuckySeven { get; set; }
 
+        public string LockedCategory { get; set; } = null;
+        public bool LockUsed { get; set; } = false;
 
         public int Penalty { get; set; } = 0;
 
@@ -724,14 +723,18 @@ namespace KniffelConsole
 
         public int BonusScore => (TwoPairs ?? 0) + (MiniFullHouse ?? 0) + (ChancePlus ?? 0) + (LuckySeven ?? 0);
 
-        public string LockedCategory { get; set; } = null;
-        public bool LockUsed { get; set; } = false;
-
-
-
         public int TotalScore => UpperScore + UpperBonus + LowerScore + BonusScore - Penalty;
         public void SetScore(string category, int points)
         {
+            if (!string.IsNullOrEmpty(LockedCategory) && category == LockedCategory && !LockUsed)
+            {
+                points *= 2;
+                LockUsed = true;
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine($"In Kategorie {category} wurden die Punkte verdoppelt.");
+                Console.ResetColor();
+            }
+
             switch (category)
             {
                 case "Einsen": Ones = points; break;
