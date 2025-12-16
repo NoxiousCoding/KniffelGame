@@ -11,6 +11,7 @@ namespace KniffelConsole
         static void Main()
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
+            Console.Title = "Kniffel von NoxiousCoding";
 
             while (true)
             {
@@ -205,7 +206,10 @@ namespace KniffelConsole
                     scores[p].SetScore(category, points);
 
                     Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine($"{playerNames[p]} belegt {category} mit {points} Punkten.");
+                    if(category == scores[p].LockedCategory && scores[p].LockUsed)
+                        Console.WriteLine($"{playerNames[p]} belegt {category} (LOCKED) mit {points * 2} Punkten.");
+                    else
+                        Console.WriteLine($"{playerNames[p]} belegt {category} mit {points} Punkten.");
                     Console.ResetColor();
 
                     scores[p].Print();
@@ -724,6 +728,16 @@ namespace KniffelConsole
         public int BonusScore => (TwoPairs ?? 0) + (MiniFullHouse ?? 0) + (ChancePlus ?? 0) + (LuckySeven ?? 0);
 
         public int TotalScore => UpperScore + UpperBonus + LowerScore + BonusScore - Penalty;
+
+        private string LockIcon(string category)
+        {
+            if (LockedCategory == category && LockUsed)
+                return "🔒";
+            
+            return "🔓";
+        }
+
+
         public void SetScore(string category, int points)
         {
             if (!string.IsNullOrEmpty(LockedCategory) && category == LockedCategory && !LockUsed)
@@ -794,33 +808,33 @@ namespace KniffelConsole
         {
             Console.WriteLine("\n===== PUNKTETABELLE =====");
             Console.WriteLine("\n--- Obere Sektion ---");
-            Console.WriteLine($"Einsen:          {Ones}");
-            Console.WriteLine($"Zweien:          {Twos}");
-            Console.WriteLine($"Dreien:          {Threes}");
-            Console.WriteLine($"Vieren:          {Fours}");
-            Console.WriteLine($"Fünfen:          {Fives}");
-            Console.WriteLine($"Sechsen:         {Sixes}");
-            Console.WriteLine($"Obere Sektion:   {UpperScore}");
-            Console.WriteLine($"Bonus (63+):     {UpperBonus}");
+            Console.WriteLine($"{LockIcon("Einsen")} Einsen:            {Ones}");
+            Console.WriteLine($"{LockIcon("Zweien")} Zweien:            {Twos}");
+            Console.WriteLine($"{LockIcon("Dreien")} Dreien:            {Threes}");
+            Console.WriteLine($"{LockIcon("Vieren")} Vieren:            {Fours}");
+            Console.WriteLine($"{LockIcon("Fünfen")} Fünfen:            {Fives}");
+            Console.WriteLine($"{LockIcon("Sechsen")} Sechsen:          {Sixes}");
+            Console.WriteLine($"Obere Sektion:          {UpperScore}");
+            Console.WriteLine($"Bonus (63+):            {UpperBonus}");
             Console.WriteLine("\n--- Untere Sektion ---");
-            Console.WriteLine($"Paar:            {Pair}");
-            Console.WriteLine($"Dreierpasch:     {ThreeOfAKind}");
-            Console.WriteLine($"Viererpasch:     {FourOfAKind}");
-            Console.WriteLine($"Full House:      {FullHouse}");
-            Console.WriteLine($"Kleine Straße:   {SmallStraight}");
-            Console.WriteLine($"Große Straße:    {LargeStraight}");
-            Console.WriteLine($"Kniffel:         {Yahtzee}");
-            Console.WriteLine($"Chance:          {Chance}");
-            Console.WriteLine($"Untere Sektion:  {LowerScore}");
+            Console.WriteLine($"{LockIcon("Paar")} Paar:                        {Pair}");
+            Console.WriteLine($"{LockIcon("Dreierpasch")} Dreierpasch:          {ThreeOfAKind}");
+            Console.WriteLine($"{LockIcon("Viererpasch")} Viererpasch:          {FourOfAKind}");
+            Console.WriteLine($"{LockIcon("Full House")} Full House:            {FullHouse}");
+            Console.WriteLine($"{LockIcon("Kleine Straße")} Kleine Straße:      {SmallStraight}");
+            Console.WriteLine($"{LockIcon("Große Straße")} Große Straße:        {LargeStraight}");
+            Console.WriteLine($"{LockIcon("Kniffel")} Kniffel:                  {Yahtzee}");
+            Console.WriteLine($"{LockIcon("Chance")} Chance:                    {Chance}");
+            Console.WriteLine($"Untere Sektion:         {LowerScore}");
             Console.WriteLine("\n--- Bonus Sektion ---");
-            Console.WriteLine($"Zwei Paare:      {TwoPairs}");
-            Console.WriteLine($"Mini Full House: {MiniFullHouse}");
-            Console.WriteLine($"Chance+:         {ChancePlus}");
-            Console.WriteLine($"Lucky Seven:    {LuckySeven}");
-            Console.WriteLine($"Bonus Sektion:   {BonusScore}");
+            Console.WriteLine($"{LockIcon("Zwei Paare")} Zwei Paare:            {TwoPairs}");
+            Console.WriteLine($"{LockIcon("Mini Full House")} Mini Full House:  {MiniFullHouse}");
+            Console.WriteLine($"{LockIcon("Chance+")} Chance+:                  {ChancePlus}");
+            Console.WriteLine($"{LockIcon("Lucky Seven")} Lucky Seven:          {LuckySeven}");
+            Console.WriteLine($"Bonus Sektion:          {BonusScore}");
             Console.WriteLine("==========================\n");
-            Console.WriteLine($"Strafpunkte:     {Penalty}");
-            Console.WriteLine($"\nGESAMTPUNKTE:  {TotalScore}");
+            Console.WriteLine($"Strafpunkte:            {Penalty}");
+            Console.WriteLine($"\nGESAMTPUNKTE:         {TotalScore}");
             Console.WriteLine("==========================\n");
         }
     }
