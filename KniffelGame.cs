@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
@@ -203,25 +204,6 @@ namespace KniffelConsole
 
                     string category = playerNames[p] == "Computer" ? ChooseComputerCategory(scores[p], dice, compDifficulty) : ChooseCategory(scores[p], dice);
                     int points = EvaluateCategory(category, dice);
-                    // Computer kann Kategorie locken
-                    if (playerNames[p] == "Computer" && !scores[p].LockUsed && scores[p].LockedCategory == null)
-                    {
-                        bool shouldLock = compDifficulty switch
-                        {
-                            Difficulty.Easy => false,
-                            Difficulty.Medium => points >= 40,
-                            Difficulty.Hard => points >= 30 || category == "Kniffel",
-                            _ => false
-                        };
-
-                        if (shouldLock)
-                        {
-                            scores[p].LockedCategory = category;
-                            Console.ForegroundColor = ConsoleColor.Cyan;
-                            Console.WriteLine($"🤖 Computer LOCKT die Kategorie {category}!");
-                            Console.ResetColor();
-                        }
-                    }
 
                     scores[p].SetScore(category, points);
 
@@ -542,6 +524,40 @@ namespace KniffelConsole
                         }
                     }
                 }
+                if(!sc.LockUsed && sc.LockedCategory == null)
+                {
+                    bool shouldLock = false;
+                    
+                    switch(difficulty)
+                    {
+                        case Difficulty.Easy:
+                            if (bestScore >= 40) shouldLock = true;
+                            break;
+                            case Difficulty.Medium:
+                            if ((selectedCat == "Kniffel" && bestScore == 50) || 
+                                    (selectedCat == "Full House" && bestScore >= 25) || 
+                                    (selectedCat == "Große Straße" && bestScore >= 40) ||
+                                    (bestScore >= 30))
+                                shouldLock = true;
+                            break;
+                            case Difficulty.Hard:
+                            if ((selectedCat == "Kniffel" && bestScore == 50) ||
+                                    (selectedCat == "Full House" && bestScore >= 25) ||
+                                    (selectedCat == "Große Straße" && bestScore >= 40) ||
+                                    (selectedCat == "Lucky Seven" && bestScore == 7) ||
+                                    (selectedCat == "Chance+" && bestScore >= 25) ||
+                                    (bestScore >= 20))
+                                shouldLock = true;
+                            break;
+                    }
+                    if (shouldLock)
+                    {
+                        sc.LockedCategory = selectedCat;
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.WriteLine($"🤖 Computer LOCKT die Kategorie {selectedCat}!");
+                        Console.ResetColor();
+                    }
+                }
             }
 
 
@@ -755,7 +771,6 @@ namespace KniffelConsole
         {
             if (LockedCategory == category && LockUsed)
                 return "🔒";
-            
             return "🔓";
         }
 
