@@ -840,12 +840,32 @@ namespace KniffelConsole
                 _ => false
             };
         }
+       
+        private int getMaxCategoryLength()
+            {
+            string[] categories = {
+                "Einsen","Zweien","Dreien","Vieren","Fünfen","Sechsen",
+                "Paar","Dreierpasch","Viererpasch","Full House",
+                "Kleine Straße","Große Straße","Kniffel","Chance",
+                "Zwei Paare","Mini Full House","Chance+","Lucky Seven"
+            };
+            int maxlen = 0;
+            foreach (var cat in categories)
+            {
+                int len = (LockIcon(cat) + " " + cat + ":").Length;
+                if (len > maxlen)
+                    maxlen = len;
+            }
+            return maxlen;
+        }
+
 
         // Hilfsfunktion zum Ausdrucken der Punktetabelle
         private void PrintLine(string category, int? value)
         {
+            int colWidth = getMaxCategoryLength() + 2; 
             string left = $"{LockIcon(category)} {category}:";
-            Console.WriteLine($"{left,-22} {value}");
+            Console.WriteLine($"{left.PadRight(colWidth)} {value}");
         }
         public void Print()
         {
