@@ -203,6 +203,26 @@ namespace KniffelConsole
 
                     string category = playerNames[p] == "Computer" ? ChooseComputerCategory(scores[p], dice, compDifficulty) : ChooseCategory(scores[p], dice);
                     int points = EvaluateCategory(category, dice);
+                    // Computer kann Kategorie locken
+                    if (playerNames[p] == "Computer" && !scores[p].LockUsed && scores[p].LockedCategory == null)
+                    {
+                        bool shouldLock = compDifficulty switch
+                        {
+                            Difficulty.Easy => false,
+                            Difficulty.Medium => points >= 40,
+                            Difficulty.Hard => points >= 30 || category == "Kniffel",
+                            _ => false
+                        };
+
+                        if (shouldLock)
+                        {
+                            scores[p].LockedCategory = category;
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.WriteLine($"🤖 Computer LOCKT die Kategorie {category}!");
+                            Console.ResetColor();
+                        }
+                    }
+
                     scores[p].SetScore(category, points);
 
                     Console.ForegroundColor = ConsoleColor.Yellow;
@@ -503,6 +523,7 @@ namespace KniffelConsole
                             if (cat == "Chance+" && pts >= 25) priority += 1;
                             if (cat == "Mini Full House" && pts > 0) priority += 3;
                             if (cat == "Lucky Seven" && pts == 7) priority += 6;
+                            if (cat == "Zwei Paare" && pts > 0) priority += 2;
                         }
                         else if (difficulty == Difficulty.Hard)
                         {
@@ -511,6 +532,7 @@ namespace KniffelConsole
                             if (cat == "Chance+" && pts >= 25) priority += 15;
                             if (cat == "Mini Full House" && pts > 0) priority += 8;
                             if (cat == "Lucky Seven" && pts == 7) priority += 20;
+                            if (cat == "Zwei Paare" && pts > 0) priority += 10;
                         }
 
                         if (pts + priority > bestScore)
@@ -522,6 +544,7 @@ namespace KniffelConsole
                 }
             }
 
+
             // Punkte berechnen und eintragen
             int points = EvaluateCategory(selectedCat, dice);
 
@@ -530,7 +553,6 @@ namespace KniffelConsole
                 sc.Penalty += 5; // Strafpunkte für Computer ebenfalls
             }
 
-            sc.SetScore(selectedCat, points);
             return selectedCat;
         }
 
@@ -804,52 +826,57 @@ namespace KniffelConsole
             };
         }
 
+        // Hilfsfunktion zum Ausdrucken der Punktetabelle
+        private void PrintLine(string category, int? value)
+        {
+            string left = $"{LockIcon(category)} {category}:";
+            Console.WriteLine($"{left,-22} {value}");
+        }
         public void Print()
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("\n===== PUNKTETABELLE =====");
             Console.WriteLine("\n--- Obere Sektion ---");
             Console.ResetColor();
-            Console.WriteLine($"{LockIcon("Einsen")} Einsen:            {Ones}");
-            Console.WriteLine($"{LockIcon("Zweien")} Zweien:            {Twos}");
-            Console.WriteLine($"{LockIcon("Dreien")} Dreien:            {Threes}");
-            Console.WriteLine($"{LockIcon("Vieren")} Vieren:            {Fours}");
-            Console.WriteLine($"{LockIcon("Fünfen")} Fünfen:            {Fives}");
-            Console.WriteLine($"{LockIcon("Sechsen")} Sechsen:          {Sixes}");
+            PrintLine("Zweien", Twos);
+            PrintLine("Dreien", Threes);
+            PrintLine("Vieren", Fours);
+            PrintLine("Fünfen", Fives);
+            PrintLine("Sechsen", Sixes);
             Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine($"Obere Sektion:          {UpperScore}");
-            Console.WriteLine($"Bonus (63+):            {UpperBonus}");
+            PrintLine("Obere Sektion", UpperScore);
+            PrintLine("Bonus (63+)", UpperBonus);
             Console.ResetColor();
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("\n--- Untere Sektion ---");
             Console.ResetColor();
-            Console.WriteLine($"{LockIcon("Paar")} Paar:                        {Pair}");
-            Console.WriteLine($"{LockIcon("Dreierpasch")} Dreierpasch:          {ThreeOfAKind}");
-            Console.WriteLine($"{LockIcon("Viererpasch")} Viererpasch:          {FourOfAKind}");
-            Console.WriteLine($"{LockIcon("Full House")} Full House:            {FullHouse}");
-            Console.WriteLine($"{LockIcon("Kleine Straße")} Kleine Straße:      {SmallStraight}");
-            Console.WriteLine($"{LockIcon("Große Straße")} Große Straße:        {LargeStraight}");
-            Console.WriteLine($"{LockIcon("Kniffel")} Kniffel:                  {Yahtzee}");
-            Console.WriteLine($"{LockIcon("Chance")} Chance:                    {Chance}");
+            PrintLine("Paar", Pair);
+            PrintLine("Dreierpasch", ThreeOfAKind);
+            PrintLine("Viererpasch", FourOfAKind);
+            PrintLine("Full House", FullHouse);
+            PrintLine("Kleine Straße", SmallStraight);
+            PrintLine("Große Straße", LargeStraight);
+            PrintLine("Kniffel", Yahtzee);
+            PrintLine("Chance", Chance);
             Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine($"Untere Sektion:         {LowerScore}");
+            PrintLine("Untere Sektion", LowerScore);
             Console.ResetColor();
             Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine("\n--- Bonus Sektion ---");
             Console.ResetColor();
-            Console.WriteLine($"{LockIcon("Zwei Paare")} Zwei Paare:            {TwoPairs}");
-            Console.WriteLine($"{LockIcon("Mini Full House")} Mini Full House:  {MiniFullHouse}");
-            Console.WriteLine($"{LockIcon("Chance+")} Chance+:                  {ChancePlus}");
-            Console.WriteLine($"{LockIcon("Lucky Seven")} Lucky Seven:          {LuckySeven}");
+            PrintLine("Zwei Paare", TwoPairs);
+            PrintLine("Mini Full House", MiniFullHouse);
+            PrintLine("Chance+", ChancePlus);
+            PrintLine("Lucky Seven", LuckySeven);
             Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine($"Bonus Sektion:          {BonusScore}");
+            PrintLine("Bonus Sektion", BonusScore);
             Console.ResetColor();
             Console.WriteLine("==========================\n");
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"Strafpunkte:            {Penalty}");
+            PrintLine("Strafpunkte", Penalty);
             Console.ResetColor();
             Console.ForegroundColor = ConsoleColor.DarkYellow;
-            Console.WriteLine($"\nGESAMTPUNKTE:         {TotalScore}");
+            PrintLine("GESAMTPUNKTE", TotalScore);
             Console.ResetColor();
             Console.WriteLine("==========================\n");
         }
