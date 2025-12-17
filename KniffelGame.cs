@@ -90,7 +90,7 @@ namespace KniffelConsole
                     Console.WriteLine("• 13 Runden – jede Kategorie genau einmal");
                     Console.WriteLine("• Kategorien: Einsen, Zweien, ... Kniffel (50 Punkte)");
                     Console.WriteLine("• Bonus: 35 Punkte ab 63 Punkten in der oberen Sektion");
-                    Console.WriteLine("• Du kannst eine Kategorie locken und die Punkte damit verdoppeln");
+                    Console.WriteLine("• Du kannst eine Kategorie einmal pro Spiel locken und die Punkte damit verdoppeln,\n🔓 können gelockt werden,\n🔒 gelockte Kategorie");
                     Console.WriteLine("• Computer kann optional als Spieler teilnehmen");
                     Console.WriteLine("\nENTER zum Zurückkehren...");
                     Console.ReadLine();
@@ -499,16 +499,16 @@ namespace KniffelConsole
                         if (difficulty == Difficulty.Medium)
                         {
                             if (cat == "Kniffel" && pts == 50) priority += 20;
-                            if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 5;
+                            if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 9;
                             if (cat == "Chance+" && pts >= 25) priority += 1;
                             if (cat == "Mini Full House" && pts > 0) priority += 3;
-                            if (cat == "Lucky Seven" && pts == 7) priority += 10;
+                            if (cat == "Lucky Seven" && pts == 7) priority += 6;
                         }
                         else if (difficulty == Difficulty.Hard)
                         {
                             if (cat == "Kniffel" && pts == 50) priority += 50;
                             if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 10;
-                            if (cat == "Chance+" && pts >= 25) priority += 5;
+                            if (cat == "Chance+" && pts >= 25) priority += 15;
                             if (cat == "Mini Full House" && pts > 0) priority += 8;
                             if (cat == "Lucky Seven" && pts == 7) priority += 20;
                         }
