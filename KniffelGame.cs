@@ -806,17 +806,23 @@ namespace KniffelConsole
 
         public void Print()
         {
+            Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("\n===== PUNKTETABELLE =====");
             Console.WriteLine("\n--- Obere Sektion ---");
+            Console.ResetColor();
             Console.WriteLine($"{LockIcon("Einsen")} Einsen:            {Ones}");
             Console.WriteLine($"{LockIcon("Zweien")} Zweien:            {Twos}");
             Console.WriteLine($"{LockIcon("Dreien")} Dreien:            {Threes}");
             Console.WriteLine($"{LockIcon("Vieren")} Vieren:            {Fours}");
             Console.WriteLine($"{LockIcon("Fünfen")} Fünfen:            {Fives}");
             Console.WriteLine($"{LockIcon("Sechsen")} Sechsen:          {Sixes}");
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine($"Obere Sektion:          {UpperScore}");
             Console.WriteLine($"Bonus (63+):            {UpperBonus}");
+            Console.ResetColor();
+            Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("\n--- Untere Sektion ---");
+            Console.ResetColor();
             Console.WriteLine($"{LockIcon("Paar")} Paar:                        {Pair}");
             Console.WriteLine($"{LockIcon("Dreierpasch")} Dreierpasch:          {ThreeOfAKind}");
             Console.WriteLine($"{LockIcon("Viererpasch")} Viererpasch:          {FourOfAKind}");
@@ -825,16 +831,26 @@ namespace KniffelConsole
             Console.WriteLine($"{LockIcon("Große Straße")} Große Straße:        {LargeStraight}");
             Console.WriteLine($"{LockIcon("Kniffel")} Kniffel:                  {Yahtzee}");
             Console.WriteLine($"{LockIcon("Chance")} Chance:                    {Chance}");
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine($"Untere Sektion:         {LowerScore}");
+            Console.ResetColor();
+            Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine("\n--- Bonus Sektion ---");
+            Console.ResetColor();
             Console.WriteLine($"{LockIcon("Zwei Paare")} Zwei Paare:            {TwoPairs}");
             Console.WriteLine($"{LockIcon("Mini Full House")} Mini Full House:  {MiniFullHouse}");
             Console.WriteLine($"{LockIcon("Chance+")} Chance+:                  {ChancePlus}");
             Console.WriteLine($"{LockIcon("Lucky Seven")} Lucky Seven:          {LuckySeven}");
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine($"Bonus Sektion:          {BonusScore}");
+            Console.ResetColor();
             Console.WriteLine("==========================\n");
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"Strafpunkte:            {Penalty}");
+            Console.ResetColor();
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.WriteLine($"\nGESAMTPUNKTE:         {TotalScore}");
+            Console.ResetColor();
             Console.WriteLine("==========================\n");
         }
     }
