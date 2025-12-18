@@ -478,57 +478,83 @@ namespace KniffelConsole
                 "Zwei Paare","Mini Full House","Chance+","Lucky Seven"
             };
 
-            string selectedCat;
+            string selectedCat = null;
+            int bestEval = int.MinValue;
+            int bestRealPoints = 0;
 
             if (difficulty == Difficulty.Easy)
             {
                 // Zufällige verfügbare Kategorie
                 var available = categories.Where(c => !sc.IsUsed(c)).ToArray();
                 selectedCat = available[rnd.Next(available.Length)];
+                bestRealPoints = EvaluateCategory(selectedCat, dice);
             }
             else
             {
-                int bestScore = -1;
-                selectedCat = "";
 
                 foreach (var cat in categories)
                 {
-                    if (!sc.IsUsed(cat))
+                    if (sc.IsUsed(cat)) continue;
                     {
                         int pts = EvaluateCategory(cat, dice);
                         int priority = 0;
 
                         if (difficulty == Difficulty.Medium)
                         {
-                            if (cat == "Kniffel" && pts == 50) priority += 20;
-                            if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 9;
-                            if (cat == "Chance+" && pts >= 25) priority += 1;
-                            if (cat == "Mini Full House" && pts > 0) priority += 3;
-                            if (cat == "Lucky Seven" && pts == 7) priority += 6;
-                            if (cat == "Zwei Paare" && pts > 0) priority += 2;
+                            if (cat == "Kniffel" && pts == 50) priority = 20;
+                            if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority = 9;
+                            if (cat == "Chance+" && pts >= 25) priority = 1;
+                            if (cat == "Mini Full House" && pts > 0) priority = 3;
+                            if (cat == "Lucky Seven" && pts == 7) priority = 6;
+                            if (cat == "Zwei Paare" && pts > 0) priority = 2;
                         }
                         else if (difficulty == Difficulty.Hard)
                         {
-                            if (cat == "Kniffel" && pts == 50) priority += 50;
-                            if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority += 10;
-                            if (cat == "Chance+" && pts >= 25) priority += 15;
-                            if (cat == "Mini Full House" && pts > 0) priority += 8;
-                            if (cat == "Lucky Seven" && pts == 7) priority += 20;
-                            if (cat == "Zwei Paare" && pts > 0) priority += 10;
+                            if (cat == "Kniffel" && pts == 50) priority = 50;
+                            if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority = 10;
+                            if (cat == "Chance+" && pts >= 25) priority = 15;
+                            if (cat == "Mini Full House" && pts > 0) priority = 8;
+                            if (cat == "Lucky Seven" && pts == 7) priority = 20;
+                            if (cat == "Zwei Paare" && pts > 0) priority = 10;
                         }
+                        int eval = pts + priority;
 
-                        if (pts + priority > bestScore)
+                        if (eval > bestEval)
                         {
-                            bestScore = pts + priority;
+                            bestEval = eval;
                             selectedCat = cat;
+                            bestRealPoints = pts;
                         }
                     }
                 }
-                if(!sc.LockUsed && sc.LockedCategory == null)
+                // Sicherheitsfallback
+                if (selectedCat == null)
+                   selectedCat = categories.First(c => !sc.IsUsed(c));
+
+                if (!sc.LockUsed && sc.LockedCategory == null && difficulty != Difficulty.Easy)
                 {
                     bool shouldLock = false;
-                    
-                    switch(difficulty)
+                    if (difficulty == Difficulty.Medium)
+                    {
+                        shouldLock =
+                            (selectedCat == "Kniffel" && bestRealPoints == 50) ||
+                            (selectedCat == "Große Straße" && bestRealPoints == 40) ||
+                            (selectedCat == "Full House" && bestRealPoints == 25) ||
+                            (selectedCat == "Kleine Straße" && bestRealPoints == 30);
+                    }
+                    else if (difficulty == Difficulty.Hard)
+                    {
+                        shouldLock =
+                            (selectedCat == "Kniffel" && bestRealPoints == 50) ||
+                            (selectedCat == "Große Straße" && bestRealPoints == 40) ||
+                            (selectedCat == "Full House" && bestRealPoints == 25) ||
+                            (selectedCat == "Kleine Straße" && bestRealPoints == 30) ||
+                            (selectedCat == "Lucky Seven" && bestRealPoints == 7) ||
+                            (selectedCat == "Chance+" && bestRealPoints >= 25) ||
+                            (bestRealPoints >= 20);
+                    }
+
+                    /*switch(difficulty)
                     {
                         case Difficulty.Easy:
                             if (bestScore >= 40) shouldLock = true;
@@ -549,7 +575,8 @@ namespace KniffelConsole
                                     (bestScore >= 20))
                                 shouldLock = true;
                             break;
-                    }
+                    }*/
+
                     if (shouldLock)
                     {
                         sc.LockedCategory = selectedCat;
