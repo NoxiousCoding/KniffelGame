@@ -332,7 +332,7 @@ namespace KniffelConsole
         // -------------------------------
         // KI-Logik
         // -------------------------------
-        static bool[] DecideDiceToKeep(int[] dice, Difficulty difficulty = Difficulty.Medium)
+        static bool[] DecideDiceToKeep(int[] dice,Difficulty difficulty = Difficulty.Medium)
         {
             bool[] keep = new bool[5];
             var counts = new int[7];
@@ -384,7 +384,7 @@ namespace KniffelConsole
                 // 4. Chance+: Würfel >= 4 behalten
                 for (int i = 0; i < 5; i++)
                     if (dice[i] >= 4) keep[i] = true;
-            }
+            }   
 
             return keep;
         }
@@ -484,15 +484,53 @@ namespace KniffelConsole
 
             if (difficulty == Difficulty.Easy)
             {
-                // Zufällige verfügbare Kategorie
-                var available = categories.Where(c => !sc.IsUsed(c)).ToArray();
-                selectedCat = available[rnd.Next(available.Length)];
-                bestRealPoints = EvaluateCategory(selectedCat, dice);
+                foreach (var cat in sc.GetOpenCategories())
+                {
+                    int pts = EvaluateCategory(cat, dice);
+                    int priority = cat switch
+                    {
+                        "Kniffel" => pts == 50 ? 20 : 0,
+                        "Full House" => pts > 0 ? 10 : 0,
+                        "Große Straße" => pts > 0 ? 10 : 0,
+                        "Kleine Straße" => pts > 0 ? 5 : 0,
+                        "Chance+" => pts >= 25 ? 3 : 0,
+                        "Mini Full House" => pts > 0 ? 2 : 0,
+                        "Lucky Seven" => pts == 7 ? 5 : 0,
+                        "Zwei Paare" => pts > 0 ? 2 : 0,
+                        "Einsen" => pts > 0 ? 1 : 0,
+                        "Zweien" => pts > 0 ? 1 : 0,
+                        "Dreien" => pts > 0 ? 1 : 0,
+                        "Vieren" => pts > 0 ? 1 : 0,
+                        "Fünfen" => pts > 0 ? 1 : 0,
+                        "Sechsen" => pts > 0 ? 1 : 0,
+                        "Paar" => pts > 0 ? 3 : 0,
+                        "Dreierpasch" => pts > 0 ? 5 : 0,
+                        "Viererpasch" => pts > 0 ? 5 : 0,
+                        "Chance" => pts > 0 ? 2 : 0,
+                        _ => 0
+                    };
+                    int eval = pts + priority;
+                    if (eval > bestEval)
+                    {
+                        bestEval = eval;
+                        selectedCat = cat;
+                        bestRealPoints = pts;
+                    }
+                }
+
+                // Zufälliges Locken mit niedriger Wahrscheinlichkeit (z.B. 15%)
+                if (!sc.LockUsed && sc.LockedCategory == null && rnd.NextDouble() < 0.15)
+                {
+                    sc.LockedCategory = selectedCat;
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.WriteLine($"🤖 Computer LOCKT (zufällig) die Kategorie {selectedCat}!");
+                    Console.ResetColor();
+                }
             }
             else
             {
 
-                foreach (var cat in categories)
+                foreach (var cat in sc.GetOpenCategories())
                 {
                     if (sc.IsUsed(cat)) continue;
                     {
@@ -501,21 +539,53 @@ namespace KniffelConsole
 
                         if (difficulty == Difficulty.Medium)
                         {
-                            if (cat == "Kniffel" && pts == 50) priority = 20;
-                            if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority = 9;
-                            if (cat == "Chance+" && pts >= 25) priority = 1;
-                            if (cat == "Mini Full House" && pts > 0) priority = 3;
-                            if (cat == "Lucky Seven" && pts == 7) priority = 6;
-                            if (cat == "Zwei Paare" && pts > 0) priority = 2;
+                            priority = cat switch
+                            {
+                                "Kniffel" => pts == 50 ? 30 : 0,
+                                "Full House" => pts > 0 ? 15 : 0,
+                                "Große Straße" => pts > 0 ? 15 : 0,
+                                "Kleine Straße" => pts > 0 ? 10 : 0,
+                                "Chance+" => pts >= 25 ? 5 : 0,
+                                "Mini Full House" => pts > 0 ? 5 : 0,
+                                "Lucky Seven" => pts == 7 ? 10 : 0,
+                                "Zwei Paare" => pts > 0 ? 5 : 0,
+                                "Einsen" => pts > 0 ? 1 : 0,
+                                "Zweien" => pts > 0 ? 1 : 0,
+                                "Dreien" => pts > 0 ? 1 : 0,
+                                "Vieren" => pts > 0 ? 1 : 0,
+                                "Fünfen" => pts > 0 ? 1 : 0,
+                                "Sechsen" => pts > 0 ? 1 : 0,
+                                "Paar" => pts > 0 ? 5 : 0,
+                                "Dreierpasch" => pts > 0 ? 10 : 0,
+                                "Viererpasch" => pts > 0 ? 10 : 0,
+                                "Chance" => pts > 0 ? 5 : 0,
+                                _ => 0
+                            };
                         }
                         else if (difficulty == Difficulty.Hard)
                         {
-                            if (cat == "Kniffel" && pts == 50) priority = 50;
-                            if ((cat == "Full House" || cat == "Große Straße") && pts > 0) priority = 10;
-                            if (cat == "Chance+" && pts >= 25) priority = 15;
-                            if (cat == "Mini Full House" && pts > 0) priority = 8;
-                            if (cat == "Lucky Seven" && pts == 7) priority = 20;
-                            if (cat == "Zwei Paare" && pts > 0) priority = 10;
+                            priority = cat switch
+                            {
+                                "Kniffel" => pts == 50 ? 50 : 0,
+                                "Full House" => pts > 0 ? 25 : 0,
+                                "Große Straße" => pts > 0 ? 25 : 0,
+                                "Kleine Straße" => pts > 0 ? 20 : 0,
+                                "Chance+" => pts >= 25 ? 15 : 0,
+                                "Mini Full House" => pts > 0 ? 10 : 0,
+                                "Lucky Seven" => pts == 7 ? 20 : 0,
+                                "Zwei Paare" => pts > 0 ? 10 : 0,
+                                "Einsen" => pts > 0 ? 5 : 0,
+                                "Zweien" => pts > 0 ? 5 : 0,
+                                "Dreien" => pts > 0 ? 5 : 0,
+                                "Vieren" => pts > 0 ? 5 : 0,
+                                "Fünfen" => pts > 0 ? 5 : 0,
+                                "Sechsen" => pts > 0 ? 5 : 0,
+                                "Paar" => pts > 0 ? 10 : 0,
+                                "Dreierpasch" => pts > 0 ? 15 : 0,
+                                "Viererpasch" => pts > 0 ? 20 : 0,
+                                "Chance" => pts > 0 ? 10 : 0,
+                                _ => 0
+                            };
                         }
                         int eval = pts + priority;
 
@@ -533,26 +603,12 @@ namespace KniffelConsole
 
                 if (!sc.LockUsed && sc.LockedCategory == null && difficulty != Difficulty.Easy)
                 {
-                    bool shouldLock = false;
-                    if (difficulty == Difficulty.Medium)
+                    bool shouldLock = difficulty switch
                     {
-                        shouldLock =
-                            (selectedCat == "Kniffel" && bestRealPoints == 50) ||
-                            (selectedCat == "Große Straße" && bestRealPoints == 40) ||
-                            (selectedCat == "Full House" && bestRealPoints == 25) ||
-                            (selectedCat == "Kleine Straße" && bestRealPoints == 30);
-                    }
-                    else if (difficulty == Difficulty.Hard)
-                    {
-                        shouldLock =
-                            (selectedCat == "Kniffel" && bestRealPoints == 50) ||
-                            (selectedCat == "Große Straße" && bestRealPoints == 40) ||
-                            (selectedCat == "Full House" && bestRealPoints == 25) ||
-                            (selectedCat == "Kleine Straße" && bestRealPoints == 30) ||
-                            (selectedCat == "Lucky Seven" && bestRealPoints == 7) ||
-                            (selectedCat == "Chance+" && bestRealPoints >= 25) ||
-                            (bestRealPoints >= 20);
-                    }
+                        Difficulty.Medium => bestRealPoints >= 25, // alle Kategorien mit mindestens 25 Punkten
+                        Difficulty.Hard => bestRealPoints >= 40,   // alle Kategorien mit mindestens 40 Punkten
+                        _ => false
+                    };
 
                     /*switch(difficulty)
                     {
@@ -592,9 +648,7 @@ namespace KniffelConsole
             int points = EvaluateCategory(selectedCat, dice);
 
             if (points == 0)
-            {
                 sc.Penalty += 5; // Strafpunkte für Computer ebenfalls
-            }
 
             return selectedCat;
         }
@@ -800,6 +854,17 @@ namespace KniffelConsole
                 return "🔒";
             return "🔓";
         }
+
+        public List<string> GetOpenCategories()
+        {
+            string[] allcategories = {
+                "Einsen", "Zweien", "Dreien", "Vieren", "Fünfen", "Sechsen",
+                "Paar", "Dreierpasch", "Viererpasch", "Full House",
+                "Kleine Straße", "Große Straße", "Kniffel", "Chance",
+                "Zwei Paare", "Mini Full House", "Chance+", "Lucky Seven"
+            };
+            return allcategories.Where(c => !IsUsed(c)).ToList();
+        }   
 
 
         public void SetScore(string category, int points)
