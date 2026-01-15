@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace KniffelConsole
 {
@@ -24,7 +25,6 @@ namespace KniffelConsole
         public bool AllowLocking { get; set; } = true;
         public bool UsePenalty { get; set; } = true;
         public bool UseUpperBonus { get; set; } = true;
-        public bool UseBonusCategories { get; set; } = true;
         public int UpperBonusThreshold { get; set; } = 63;
         public int MaxLocks { get; set; } = 1;
         public int TeamCount { get; set; } = 2;
@@ -32,6 +32,27 @@ namespace KniffelConsole
         public bool IncludeComputer { get; set; } = false;
         public KniffelGame.Difficulty ComputerDifficulty { get; set; } = KniffelGame.Difficulty.Medium;
         public bool AnimateDice { get; set; } = true;
+        public bool UsePaar { get; set; } = true;
+        public bool UseTwoPairs { get; set; } = true;
+        public bool UseMiniFullHouse { get; set; } = true;
+        public bool UseChancePlus { get; set; } = true;
+        public bool UseLuckySeven { get; set; } = true;
+        public bool UseAnyBonusCategories => UsePaar || UseTwoPairs || UseMiniFullHouse || UseChancePlus || UseLuckySeven;
+
+        //Abwärtskompatibilität(optional)
+        [Obsolete("Use individual category properties instead")]
+        public bool UseBonusCategories
+        {
+            get => UseAnyBonusCategories;
+            set
+            {
+                UsePaar = value;
+                UseTwoPairs = value;
+                UseMiniFullHouse = value;
+                UseChancePlus = value;
+                UseLuckySeven = value;
+            }
+        }
     }
 
     class Program
@@ -48,6 +69,7 @@ namespace KniffelConsole
                 Console.WriteLine("==================================");
                 Console.WriteLine("         K N I F F E L 🎲         ");
                 Console.WriteLine("         BY NOXIOUSCODING         ");
+                Console.WriteLine("          LOVE HER C ❤️           ");
                 Console.WriteLine("==================================");
                 Console.ResetColor();
 
@@ -156,27 +178,51 @@ namespace KniffelConsole
 
                 if (input == "7") return;
 
-                var settings = new GameSettings();
+                GameSettings settings;
 
                 switch (input)
                 {
                     case "1":
-                        settings.Mode = GameMode.Classic;
+                        settings = new GameSettings
+                        {
+                            Mode = GameMode.Classic,
+                            Rounds = 13,
+                            UsePaar = false,
+                            UseTwoPairs = false,
+                            UseMiniFullHouse = false,
+                            UseChancePlus = false,
+                            UseLuckySeven = false
+                        };
                         break;
 
                     case "2":
-                        settings.Mode = GameMode.BonusEdition;
+                        settings = new GameSettings
+                        {
+                            Mode = GameMode.BonusEdition,
+                            Rounds = 18
+                        };
                         break;
 
                     case "3":
-                        settings.Mode = GameMode.SpeedRun;
-                        settings.Rounds = 8;
-                        settings.AllowLocking = false;
-                        settings.AnimateDice = false;
+                        settings = new GameSettings
+                        {
+                            Mode = GameMode.SpeedRun,
+                            Rounds = 8,
+                            AllowLocking = false,
+                            AnimateDice = false,
+                            UsePaar = false,
+                            UseTwoPairs = false,
+                            UseMiniFullHouse = false,
+                            UseChancePlus = false,
+                            UseLuckySeven = false
+                        };
                         break;
 
                     case "4":
-                        settings.Mode = GameMode.TeamMode;
+                        settings = new GameSettings
+                        {
+                            Mode = GameMode.TeamMode
+                        };
                         Console.Write("Anzahl Teams (2-4): ");
                         int teamCount;
                         while (!int.TryParse(Console.ReadLine(), out teamCount) || teamCount < 2 || teamCount > 4)
@@ -187,7 +233,10 @@ namespace KniffelConsole
                         break;
 
                     case "5":
-                        settings.Mode = GameMode.Tournament;
+                        settings = new GameSettings
+                        {
+                            Mode = GameMode.Tournament
+                        };
                         Console.Write("Anzahl Spiele im Turnier (1-5): ");
                         int gamesCount;
                         while (!int.TryParse(Console.ReadLine(), out gamesCount) || gamesCount < 1 || gamesCount > 5)
@@ -198,9 +247,8 @@ namespace KniffelConsole
                         break;
 
                     case "6":
-                        settings.Mode = GameMode.Custom;
-                        ConfigureCustomMode(ref settings);
-                        break;
+                        ConfigureAndRunCustomMode();
+                        return;
 
                     default:
                         Console.WriteLine("Ungültige Eingabe! ENTER drücken...");
@@ -208,48 +256,62 @@ namespace KniffelConsole
                         continue;
                 }
 
-                // Zusätzliche Einstellungen für alle Modi außer Custom
-                if (settings.Mode != GameMode.Custom)
-                {
-                    if (settings.Mode != GameMode.SpeedRun)
-                    {
-                        Console.Write("Punkte-Locking aktivieren? (j/n): ");
-                        settings.AllowLocking = Console.ReadLine().Trim().ToLower() == "j";
-                    }
+                AskAdditionalSettings(settings);
 
-                    Console.Write("Strafpunkte aktivieren? (j/n): ");
-                    settings.UsePenalty = Console.ReadLine().Trim().ToLower() == "j";
-
-                    if (settings.Mode != GameMode.Classic)
-                    {
-                        Console.Write("Würfel-Animation aktivieren? (j/n): ");
-                        settings.AnimateDice = Console.ReadLine().Trim().ToLower() == "j";
-                    }
-                }
-
-                // KI-Frage für alle Modi außer Team
-                if (settings.Mode != GameMode.TeamMode)
-                {
-                    Console.Write("Computer-Gegner hinzufügen? (j/n): ");
-                    settings.IncludeComputer = Console.ReadLine().Trim().ToLower() == "j";
-
-                    if (settings.IncludeComputer && settings.Mode != GameMode.Custom)
-                    {
-                        Console.Write("KI Schwierigkeit (1=Einfach, 2=Mittel, 3=Schwer): ");
-                        int diffInput = int.Parse(Console.ReadLine());
-                        settings.ComputerDifficulty = diffInput switch
-                        {
-                            1 => KniffelGame.Difficulty.Easy,
-                            2 => KniffelGame.Difficulty.Medium,
-                            3 => KniffelGame.Difficulty.Hard,
-                            _ => KniffelGame.Difficulty.Medium
-                        };
-                    }
-                }
 
                 KniffelGame.RunGame(settings);
                 break;
             }
+        }
+
+        static void AskAdditionalSettings(GameSettings settings)
+        { 
+            if (settings.Mode != GameMode.SpeedRun)
+            {
+                Console.Write("Punkte-Locking aktivieren? (j/n, Standard j): ");
+                settings.AllowLocking = Console.ReadLine().Trim().ToLower() == "j";
+                Console.Write("Strafpunkte aktivieren? (j/n, Standard j): ");
+                settings.UsePenalty = Console.ReadLine().Trim().ToLower() == "j";
+            }
+
+            if (settings.Mode != GameMode.Classic)
+            {
+                Console.Write("Würfel-Animation aktivieren? (j/n, Standard j): ");
+                settings.AnimateDice = Console.ReadLine().Trim().ToLower() == "j";
+            }
+
+            if (settings.Mode != GameMode.TeamMode)
+            {
+                Console.Write("Computer-Gegner hinzufügen? (j/n, Standard n): ");
+                settings.IncludeComputer = Console.ReadLine().Trim().ToLower() == "j";
+
+                if (settings.IncludeComputer)
+                {
+                    Console.Write("KI Schwierigkeit (1=Einfach, 2=Mittel, 3=Schwer, Standard 2): ");
+                    int diffInput;
+                    while (!int.TryParse(Console.ReadLine(), out diffInput) || diffInput < 1 || diffInput > 3)
+                    {
+                        Console.Write("Bitte 1-3 eingeben: ");
+                    }
+                    settings.ComputerDifficulty = diffInput switch
+                    {
+                        1 => KniffelGame.Difficulty.Easy,
+                        2 => KniffelGame.Difficulty.Medium,
+                        3 => KniffelGame.Difficulty.Hard,
+                        _ => KniffelGame.Difficulty.Medium
+                    };
+                }
+            }
+        }
+
+        static void ConfigureAndRunCustomMode()
+        {
+            var settings = new GameSettings
+            {
+                Mode = GameMode.Custom
+            };
+            ConfigureCustomMode(ref settings);
+            KniffelGame.RunGame(settings);
         }
 
         static void ConfigureCustomMode(ref GameSettings settings)
@@ -262,7 +324,7 @@ namespace KniffelConsole
             string input;
 
             // Anzahl Runden
-            Console.Write("Anzahl Runden (5-20, Standard 13): ");
+            Console.Write("Anzahl Runden (bis 18, Standard 13): ");
             input = Console.ReadLine();
             if (int.TryParse(input, out tempValue) && tempValue >= 5 && tempValue <= 20)
             {
@@ -331,9 +393,23 @@ namespace KniffelConsole
             }
 
             // Bonus-Kategorien
-            Console.Write("Bonus-Kategorien verwenden? (j/n, Standard j): ");
+            Console.WriteLine("\n=== BONUS-KATEGORIEN ===");
+            Console.Write("Paar aktivieren? (j/n, Standard j): ");
             input = Console.ReadLine().Trim().ToLower();
-            settings.UseBonusCategories = string.IsNullOrEmpty(input) || input == "j";
+            settings.UsePaar = string.IsNullOrEmpty(input) || input == "j";
+            Console.Write("Zwei Paare aktivieren? (j/n, Standard j): ");
+            input = Console.ReadLine().Trim().ToLower();
+            settings.UseTwoPairs = string.IsNullOrEmpty(input) || input == "j";
+            Console.Write("Mini Full House aktivieren? (j/n, Standart j) ");
+            input = Console.ReadLine().Trim().ToLower();
+            settings.UseMiniFullHouse = string.IsNullOrEmpty(input) || input == "j";
+            Console.Write("Chance+ aktivieren? (j/n, Standard j): ");
+            input = Console.ReadLine().Trim().ToLower();
+            settings.UseChancePlus = string.IsNullOrEmpty(input) || input == "j";
+            Console.Write("Lucky Seven aktivieren? (j/n, Standard j): ");
+            input = Console.ReadLine().Trim().ToLower();
+            settings.UseLuckySeven = string.IsNullOrEmpty(input) || input == "j";
+
 
             // Animation
             Console.Write("Würfel-Animation aktivieren? (j/n, Standard j): ");
@@ -368,7 +444,7 @@ namespace KniffelConsole
             }
             else
             {
-                settings.ComputerDifficulty = KniffelGame.Difficulty.Medium; // Standard, wird aber nicht verwendet
+                //settings.ComputerDifficulty = KniffelGame.Difficulty.Medium; // Standard, wird aber nicht verwendet
             }
 
             // Zusammenfassung anzeigen
@@ -385,7 +461,13 @@ namespace KniffelConsole
             Console.WriteLine($"   • Locking: {(settings.AllowLocking ? $"✅ Aktiv (max {settings.MaxLocks} Locks)" : "❌ Inaktiv")}");
             Console.WriteLine($"   • Strafpunkte: {(settings.UsePenalty ? "✅ Aktiv" : "❌ Inaktiv")}");
             Console.WriteLine($"   • Oberer Bonus: {(settings.UseUpperBonus ? $"✅ Aktiv (ab {settings.UpperBonusThreshold} Punkten)" : "❌ Inaktiv")}");
-            Console.WriteLine($"   • Bonus-Kategorien: {(settings.UseBonusCategories ? "✅ Aktiv" : "❌ Inaktiv")}");
+
+            Console.WriteLine($"\n🎲 BONUS-KATEGORIEN:");
+            Console.WriteLine($"   • Paar: {(settings.UsePaar ? "✅" : "❌")}");
+            Console.WriteLine($"   • Zwei Paare: {(settings.UseTwoPairs ? "✅" : "❌")}");
+            Console.WriteLine($"   • Mini Full House: {(settings.UseMiniFullHouse ? "✅" : "❌")}");
+            Console.WriteLine($"   • Chance+: {(settings.UseChancePlus ? "✅" : "❌")}");
+            Console.WriteLine($"   • Lucky Seven: {(settings.UseLuckySeven ? "✅" : "❌")}");
 
             Console.WriteLine($"\n🤖 GEGNER:");
             Console.WriteLine($"   • Computer: {(settings.IncludeComputer ? $"✅ Aktiv ({settings.ComputerDifficulty})" : "❌ Inaktiv")}");
@@ -545,14 +627,12 @@ namespace KniffelConsole
         // Klassischer Modus
         static void RunClassicMode(GameSettings settings)
         {
-            settings.UseBonusCategories = false;
             RunStandardGame(settings);
         }
 
         // Bonus Edition (Standard)
         static void RunBonusEdition(GameSettings settings)
         {
-            settings.UseBonusCategories = true;
             RunStandardGame(settings);
         }
 
@@ -788,7 +868,7 @@ namespace KniffelConsole
             Console.WriteLine($"• Runden: {settings.Rounds}");
             Console.WriteLine($"• Locking: {(settings.AllowLocking ? "Aktiv" : "Inaktiv")}");
             Console.WriteLine($"• Strafpunkte: {(settings.UsePenalty ? "Aktiv" : "Inaktiv")}");
-            Console.WriteLine($"• Bonus-Kategorien: {(settings.UseBonusCategories ? "Aktiv" : "Inaktiv")}");
+            Console.WriteLine($"• Bonus-Kategorien: {(settings.UseAnyBonusCategories ? "Aktiv" : "Inaktiv")}");
             Console.WriteLine($"• Animation: {(settings.AnimateDice ? "Aktiv" : "Inaktiv")}");
 
             RunStandardGame(settings);
@@ -1106,13 +1186,12 @@ namespace KniffelConsole
                 "Kleine Straße", "Große Straße", "Kniffel", "Chance"
             };
 
-            if (settings.UseBonusCategories)
-            {
-                categories.AddRange(new[]
-                {
-                    "Paar", "Zwei Paare", "Mini Full House", "Chance+", "Lucky Seven"
-                });
-            }
+            // Bonus-Kategorien basierend auf Einstellungen hinzufügen
+            if (settings.UsePaar) categories.Add("Paar");
+            if (settings.UseTwoPairs) categories.Add("Zwei Paare");
+            if (settings.UseMiniFullHouse) categories.Add("Mini Full House");
+            if (settings.UseChancePlus) categories.Add("Chance+");
+            if (settings.UseLuckySeven) categories.Add("Lucky Seven");
 
             while (true)
             {
@@ -1217,13 +1296,12 @@ namespace KniffelConsole
                 "Kleine Straße", "Große Straße", "Kniffel", "Chance"
             };
 
-            if (settings.UseBonusCategories)
-            {
-                categories.AddRange(new[]
-                {
-                    "Paar", "Zwei Paare", "Mini Full House", "Chance+", "Lucky Seven"
-                });
-            }
+            // Bonus-Kategorien basierend auf Einstellungen hinzufügen
+            if (settings.UsePaar) categories.Add("Paar");
+            if (settings.UseTwoPairs) categories.Add("Zwei Paare");
+            if (settings.UseMiniFullHouse) categories.Add("Mini Full House");
+            if (settings.UseChancePlus) categories.Add("Chance+");
+            if (settings.UseLuckySeven) categories.Add("Lucky Seven");
 
             string selectedCat = null;
             int bestEval = int.MinValue;
@@ -1547,14 +1625,18 @@ namespace KniffelConsole
         public int UpperBonus => Settings.UseUpperBonus && UpperScore >= Settings.UpperBonusThreshold ? 35 : 0;
         public int LowerScore => (ThreeOfAKind ?? 0) + (FourOfAKind ?? 0) + (FullHouse ?? 0) + (SmallStraight ?? 0) + (LargeStraight ?? 0) + (Yahtzee ?? 0) + (Chance ?? 0);
 
-        public int BonusScore => Settings.UseBonusCategories ?
-            (Paar ?? 0) + (TwoPairs ?? 0) + (MiniFullHouse ?? 0) + (ChancePlus ?? 0) + (LuckySeven ?? 0) : 0;
+        public int BonusScore => 
+        (Settings.UsePaar ? (Paar ?? 0) : 0) +
+        (Settings.UseTwoPairs ? (TwoPairs ?? 0) : 0) +
+        (Settings.UseMiniFullHouse ? (MiniFullHouse ?? 0) : 0) +
+        (Settings.UseChancePlus ? (ChancePlus ?? 0) : 0) +
+        (Settings.UseLuckySeven ? (LuckySeven ?? 0) : 0);
 
         public int TotalScore => UpperScore + UpperBonus + LowerScore + BonusScore - Penalty;
 
         public Dictionary<string, int?> GetAllScores()
         {
-            return new Dictionary<string, int?>
+            var scores = new Dictionary<string, int?>
             {
                 { "Einsen", Ones },
                 { "Zweien", Twos },
@@ -1562,19 +1644,23 @@ namespace KniffelConsole
                 { "Vieren", Fours },
                 { "Fünfen", Fives },
                 { "Sechsen", Sixes },
-                { "Paar", Paar },
                 { "Dreierpasch", ThreeOfAKind },
                 { "Viererpasch", FourOfAKind },
                 { "Full House", FullHouse },
                 { "Kleine Straße", SmallStraight },
                 { "Große Straße", LargeStraight },
                 { "Kniffel", Yahtzee },
-                { "Chance", Chance },
-                { "Zwei Paare", TwoPairs },
-                { "Mini Full House", MiniFullHouse },
-                { "Chance+", ChancePlus },
-                { "Lucky Seven", LuckySeven }
+                { "Chance", Chance }
             };
+
+
+                if (Settings.UsePaar) scores.Add("Paar", Paar);
+                if (Settings.UseTwoPairs) scores.Add("Zwei Paare", TwoPairs);
+                if (Settings.UseMiniFullHouse) scores.Add("Mini Full House", MiniFullHouse);
+                if (Settings.UseChancePlus) scores.Add("Chance+", ChancePlus);
+                if (Settings.UseLuckySeven) scores.Add("Lucky Seven", LuckySeven);
+
+                return scores;
         }
 
         private string LockIcon(string category)
@@ -1593,13 +1679,12 @@ namespace KniffelConsole
                 "Kleine Straße", "Große Straße", "Kniffel", "Chance"
             };
 
-            if (Settings.UseBonusCategories)
-            {
-                allCategories.AddRange(new[]
-                {
-                    "Zwei Paare", "Mini Full House", "Chance+", "Lucky Seven"
-                });
-            }
+            // Nur aktivierte Bonus-Kategorien hinzufügen
+            if (Settings.UsePaar) allCategories.Add("Paar");
+            if (Settings.UseTwoPairs) allCategories.Add("Zwei Paare");
+            if (Settings.UseMiniFullHouse) allCategories.Add("Mini Full House");
+            if (Settings.UseChancePlus) allCategories.Add("Chance+");
+            if (Settings.UseLuckySeven) allCategories.Add("Lucky Seven");
 
             return allCategories.Where(c => !IsUsed(c)).ToList();
         }
@@ -1675,7 +1760,7 @@ namespace KniffelConsole
                 "Kleine Straße", "Große Straße", "Kniffel", "Chance"
             };
 
-            if (Settings.UseBonusCategories)
+            if (Settings.UseAnyBonusCategories)
             {
                 categories.AddRange(new[]
                 {
@@ -1747,16 +1832,16 @@ namespace KniffelConsole
             PrintLine("Untere Sektion", LowerScore);
             Console.ResetColor();
 
-            if (settings.UseBonusCategories)
+            if (settings.UseAnyBonusCategories)
             {
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.WriteLine("\n--- Bonus Sektion ---");
                 Console.ResetColor();
-                PrintLine("Paar", Paar);
-                PrintLine("Zwei Paare", TwoPairs);
-                PrintLine("Mini Full House", MiniFullHouse);
-                PrintLine("Chance+", ChancePlus);
-                PrintLine("Lucky Seven", LuckySeven);
+                if (settings.UsePaar) PrintLine("Paar", Paar);
+                if (settings.UseTwoPairs) PrintLine("Zwei Paare", TwoPairs);
+                if (settings.UseMiniFullHouse) PrintLine("Mini Full House", MiniFullHouse);
+                if (settings.UseChancePlus) PrintLine("Chance+", ChancePlus);
+                if (settings.UseLuckySeven) PrintLine("Lucky Seven", LuckySeven);
                 Console.ForegroundColor = ConsoleColor.DarkGreen;
                 PrintLine("Bonus Sektion", BonusScore);
                 Console.ResetColor();
